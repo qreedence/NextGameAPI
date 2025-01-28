@@ -1,0 +1,6 @@
+@NextGameAPI_HostAddress = http://localhost:5245
+
+GET {{NextGameAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
