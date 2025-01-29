@@ -1,3 +1,4 @@
+using DotNetEnv;
 using Scalar.AspNetCore;
 
 namespace NextGameAPI
@@ -14,7 +15,21 @@ namespace NextGameAPI
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
+            Env.Load();
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(builder =>
+                {
+                    builder.WithOrigins(Environment.GetEnvironmentVariable("cors-client-https-url"), Environment.GetEnvironmentVariable("cors-client-http-url"))
+                    .AllowAnyOrigin()
+                    .AllowAnyHeader();
+                });
+            });
+
             var app = builder.Build();
+
+            app.UseCors();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
