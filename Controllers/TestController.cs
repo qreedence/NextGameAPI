@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace NextGameAPI.Controllers
 {
@@ -7,10 +8,15 @@ namespace NextGameAPI.Controllers
     public class TestController : Controller
     {
         [HttpGet("noparam")]
+        [Authorize]
         public async Task<IActionResult> TestAsync()
         {
-            await Task.Delay(1000);
-            return Ok("Hejsan");
+            if (User != null)
+            {
+                await Task.Delay(1000);
+                return Ok("Hejsan");
+            }
+            return Unauthorized();
         }
     }
 }
