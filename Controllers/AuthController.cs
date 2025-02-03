@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
@@ -48,9 +50,19 @@ namespace NextGameAPI.Controllers
         }
 
         [HttpPost("logout")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [EndpointName("LogoutUser")]
+        [EndpointSummary("Allows a user to log out")]
+        [Authorize]
         public async Task<IActionResult> LogoutAsync()
         {
-            return Ok("Log out here");
+            Task signOut = _signInManager.SignOutAsync();
+            if (signOut.IsCompletedSuccessfully)
+            {
+                return Ok();
+            }
+            return BadRequest();
         }
 
         [HttpPost("register")]
@@ -71,6 +83,20 @@ namespace NextGameAPI.Controllers
                 return Created();
             }
             return BadRequest(response.Errors);
+        }
+
+        [HttpGet("ping")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [EndpointName("Ping")]
+        [EndpointSummary("Pings the server to check if the user is authorized.")]
+        public async Task<IActionResult> PingAsync()
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                return Ok(true);
+            }
+            return Ok(false);
         }
     }
 }
