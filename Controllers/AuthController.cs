@@ -72,5 +72,19 @@ namespace NextGameAPI.Controllers
             }
             return BadRequest(response.Errors);
         }
+
+        [HttpGet("ping")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [EndpointName("Ping")]
+        [EndpointSummary("Pings the server to check if the user is authorized.")]
+        public async Task<IActionResult> PingAsync()
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                return Ok(true);
+            }
+            return Unauthorized(false);
+        }
     }
 }
