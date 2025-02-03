@@ -2,6 +2,7 @@ using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using NextGameAPI.Data;
 using NextGameAPI.Data.Models;
 using Scalar.AspNetCore;
@@ -28,7 +29,7 @@ namespace NextGameAPI
                             options.UseSqlServer(Environment.GetEnvironmentVariable("connection-string")));
 
             //Identity
-            builder.Services.AddIdentityCore<User>()
+            builder.Services.AddIdentity<User, IdentityRole>()
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
@@ -53,10 +54,11 @@ namespace NextGameAPI
                 .AddCookie(options =>
                 {
                     options.Cookie.HttpOnly = true;
-                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; 
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.None; 
                     options.SlidingExpiration = true; 
                     options.ExpireTimeSpan = TimeSpan.FromHours(1);
                     options.LoginPath = "/api/auth/login";
+                    options.Cookie.SameSite = SameSiteMode.Lax;
                     options.Events.OnRedirectToLogin = context =>
                     {
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -72,15 +74,15 @@ namespace NextGameAPI
 
             builder.Services.AddAuthorization();
 
-
             //CORS
             builder.Services.AddCors(options =>
             {
                 options.AddDefaultPolicy(builder =>
                 {
                     builder.WithOrigins(Environment.GetEnvironmentVariable("cors-client-https-url")!, Environment.GetEnvironmentVariable("cors-client-http-url")!)
-                    .AllowAnyOrigin()
-                    .AllowAnyHeader();
+                    .AllowCredentials()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
                 });
             });
 
