@@ -1,5 +1,6 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -50,7 +51,11 @@ namespace NextGameAPI
                 options.SignIn.RequireConfirmedAccount = false;
             });
 
-            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            builder.Services.AddAuthentication(options =>
+                {
+                    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+                })
                 .AddCookie(options =>
                 {
                     options.Cookie.HttpOnly = true;
@@ -64,12 +69,16 @@ namespace NextGameAPI
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         return Task.CompletedTask;
                     };
-
                     options.Events.OnRedirectToAccessDenied = context =>
                     {
                         context.Response.StatusCode = StatusCodes.Status403Forbidden;
                         return Task.CompletedTask;
                     };
+                })
+                .AddGoogle(googleOptions =>
+                {
+                    googleOptions.ClientId = Environment.GetEnvironmentVariable("google-client-id")!;
+                    googleOptions.ClientSecret = Environment.GetEnvironmentVariable("google-client-secret")!;
                 });
 
             builder.Services.AddAuthorization();

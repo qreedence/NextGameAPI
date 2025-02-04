@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
+using System.Security.Claims;
 
 namespace NextGameAPI.Controllers
 {
@@ -47,6 +50,38 @@ namespace NextGameAPI.Controllers
                 return Ok();
             }
             return Unauthorized("Login failed.");
+        }
+
+        [HttpPost("login/google")]
+        [EndpointName("LoginGoogle")]
+        public async Task<IActionResult> LoginGoogleAsync()
+        {
+            var redirectUrl = Url.Action("GoogleResponse", "Auth");
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", redirectUrl);
+            return Challenge(properties, "Google");
+        }
+
+        [HttpGet("google-response")]
+        public async Task<IActionResult> GoogleResponseAsync()
+        {
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            if (!result.Succeeded)
+            {
+                return Unauthorized("Google login failed.");
+            }
+            var email = result.Principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                user = new User { Email = email };
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    return BadRequest(createResult.Errors);
+                }
+            }
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return Redirect(Environment.GetEnvironmentVariable("cors-client-https-url")!);
         }
 
         [HttpPost("logout")]
