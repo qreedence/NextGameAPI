@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using NextGameAPI.Data.Models;
 
@@ -7,8 +8,31 @@ namespace NextGameAPI.Data
     public class ApplicationDbContext : IdentityDbContext<User>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-        {
+        {}
 
+        public DbSet<ExternalLoginToken> ExternalLoginTokens { get; set; }
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+        }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.Entity<IdentityRole>().HasData(
+                new IdentityRole
+                {
+                    Id = "7dca9899-d6bf-4671-8698-4d560ee110ee",
+                    Name = Constants.Roles.Admin,
+                    NormalizedName = Constants.Roles.Admin.ToUpper()
+                },
+                new IdentityRole
+                {
+                    Id = "78c0caeb-c37c-4192-bc48-72f30bc7e550",
+                    Name = Constants.Roles.User,
+                    NormalizedName = Constants.Roles.User.ToUpper()
+                });
         }
     }
 }

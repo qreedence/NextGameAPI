@@ -1,9 +1,21 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
+using System.Security.Claims;
+using static Azure.Core.HttpHeader;
+using System.Xml;
+using Microsoft.Identity.Client.Platforms.Features.DesktopOs.Kerberos;
+using Google.Apis.Auth;
+using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json;
+using Sprache;
+using Microsoft.Extensions.Options;
+using NextGameAPI.Data.Interfaces;
 
 namespace NextGameAPI.Controllers
 {
@@ -13,11 +25,13 @@ namespace NextGameAPI.Controllers
     {
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
+        private readonly IExternalLoginToken _externalLoginTokenRepo;
 
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager)
+        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IExternalLoginToken externalLoginTokenRepo)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _externalLoginTokenRepo = externalLoginTokenRepo;
         }
 
         [HttpPost("login")]
@@ -49,6 +63,83 @@ namespace NextGameAPI.Controllers
             return Unauthorized("Login failed.");
         }
 
+        [HttpPost("external-login")]
+        [EndpointName("ExternalLogin")]
+        [EndpointSummary("Start a sign-in process through external login provider.")]
+        public async Task<IActionResult> ExternalLoginAsync(string loginProvider, string returnUrl)
+        {
+            var redirectUrl = Url.Action("ExternalAuthCallback", "Auth", new { returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", redirectUrl);
+            properties.AllowRefresh = true;
+            return Challenge(properties, "Google");
+        }
+
+        [HttpGet("external-auth-callback")]
+        [EndpointName("ExternalAuthCallback")]
+        [EndpointSummary("Handles the response from external login provider after a sign-in attempt.")]
+        public async Task<IActionResult> ExternalAuthCallbackAsync(string returnUrl = null, string remoteError = null)
+        {
+            ExternalLoginInfo info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                return Unauthorized("Error loading external login information.");
+            }
+
+            var externalLoginToken = new ExternalLoginToken { LoginProvider = info.LoginProvider, ProviderKey=info.ProviderKey};
+            await _externalLoginTokenRepo.Add(externalLoginToken);
+            return Redirect($"{returnUrl}/login/external?token={externalLoginToken.Id}");
+
+            //var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, true, true);
+            //if (signInResult.Succeeded)
+            //{
+            //    return Redirect(returnUrl); 
+            //}
+            //var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+            //var userLoginInfo = new UserLoginInfo(info.LoginProvider, info.ProviderKey, info.ProviderDisplayName);
+            //if (email != null)
+            //{
+            //    var user = await _userManager.FindByEmailAsync(email);
+            //    if (user == null)
+            //    {
+            //        var newUser = new User { Email = email, UserName = email };
+            //        var createUser = await _userManager.CreateAsync(newUser);
+
+            //        if (createUser.Succeeded)
+            //        {
+            //            await _userManager.AddToRoleAsync(newUser, Constants.Roles.User);
+            //            await _userManager.AddLoginAsync(newUser, userLoginInfo);
+            //            await _signInManager.SignInAsync(newUser, true);
+            //            return Redirect(Environment.GetEnvironmentVariable("cors-client-https-url")!);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        await _userManager.AddLoginAsync(user, userLoginInfo);
+            //        await _signInManager.SignInAsync(user, true);
+            //        return Redirect(Environment.GetEnvironmentVariable("cors-client-https-url")!);
+            //    }
+            //}
+            //return Unauthorized();
+        }
+
+        [HttpGet("external-auth-complete")]
+        [EndpointName("ExternalAuthComplete")]
+        [EndpointSummary("Handles the exchange of an token id to sign in a user that used an external login provider.")]
+        public async Task<IActionResult> ExternalAuthComplete(Guid tokenId)
+        {
+            var loginToken = await _externalLoginTokenRepo.GetByIdAsync(tokenId);
+            if (loginToken == null)
+            {
+                return Unauthorized();
+            }
+            var signInResult = await _signInManager.ExternalLoginSignInAsync(loginToken.LoginProvider, loginToken.ProviderKey, true, true);
+            if (signInResult.Succeeded)
+            {
+                return Ok();
+            }
+            return Unauthorized();
+        }
+        
         [HttpPost("logout")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -75,11 +166,13 @@ namespace NextGameAPI.Controllers
             var newUser = new User
             {
                 Email = registerDTO.Email,
-                UserName = registerDTO.UserName
+                UserName = registerDTO.UserName,
             };
+            
             var response = await _userManager.CreateAsync(newUser, registerDTO.Password);
             if (response.Succeeded)
             {
+                await _userManager.AddToRoleAsync(newUser, Constants.Roles.User);
                 return Created();
             }
             return BadRequest(response.Errors);
@@ -92,11 +185,17 @@ namespace NextGameAPI.Controllers
         [EndpointSummary("Pings the server to check if the user is authorized.")]
         public async Task<IActionResult> PingAsync()
         {
-            if (User.Identity.IsAuthenticated)
-            {
-                return Ok(true);
-            }
-            return Ok(false);
+            return Ok(User?.Identity?.IsAuthenticated);
+        }
+
+        [HttpGet("get-user-name")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [EndpointName("GetUserName")]
+        [EndpointSummary("Gets the name of the logged in user.")]
+        public async Task<IActionResult> GetNameAsync()
+        {
+            return Ok(User?.Identity?.Name);
         }
     }
 }
