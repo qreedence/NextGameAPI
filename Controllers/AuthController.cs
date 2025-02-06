@@ -70,6 +70,7 @@ namespace NextGameAPI.Controllers
         {
             var redirectUrl = Url.Action("ExternalAuthCallback", "Auth", new { returnUrl });
             var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", redirectUrl);
+            properties.Items["prompt"] = "login";
             properties.AllowRefresh = true;
             return Challenge(properties, "Google");
         }
@@ -84,42 +85,9 @@ namespace NextGameAPI.Controllers
             {
                 return Unauthorized("Error loading external login information.");
             }
-
             var externalLoginToken = new ExternalLoginToken { LoginProvider = info.LoginProvider, ProviderKey=info.ProviderKey};
             await _externalLoginTokenRepo.Add(externalLoginToken);
             return Redirect($"{returnUrl}/login/external?token={externalLoginToken.Id}");
-
-            //var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, true, true);
-            //if (signInResult.Succeeded)
-            //{
-            //    return Redirect(returnUrl); 
-            //}
-            //var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-            //var userLoginInfo = new UserLoginInfo(info.LoginProvider, info.ProviderKey, info.ProviderDisplayName);
-            //if (email != null)
-            //{
-            //    var user = await _userManager.FindByEmailAsync(email);
-            //    if (user == null)
-            //    {
-            //        var newUser = new User { Email = email, UserName = email };
-            //        var createUser = await _userManager.CreateAsync(newUser);
-
-            //        if (createUser.Succeeded)
-            //        {
-            //            await _userManager.AddToRoleAsync(newUser, Constants.Roles.User);
-            //            await _userManager.AddLoginAsync(newUser, userLoginInfo);
-            //            await _signInManager.SignInAsync(newUser, true);
-            //            return Redirect(Environment.GetEnvironmentVariable("cors-client-https-url")!);
-            //        }
-            //    }
-            //    else
-            //    {
-            //        await _userManager.AddLoginAsync(user, userLoginInfo);
-            //        await _signInManager.SignInAsync(user, true);
-            //        return Redirect(Environment.GetEnvironmentVariable("cors-client-https-url")!);
-            //    }
-            //}
-            //return Unauthorized();
         }
 
         [HttpGet("external-auth-complete")]
