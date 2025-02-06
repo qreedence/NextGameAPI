@@ -85,9 +85,26 @@ namespace NextGameAPI.Controllers
             {
                 return Unauthorized("Error loading external login information.");
             }
-            var externalLoginToken = new ExternalLoginToken { LoginProvider = info.LoginProvider, ProviderKey=info.ProviderKey};
+            string email = info.Principal.FindFirstValue(ClaimTypes.Email);
+            var externalLoginToken = new ExternalLoginToken { LoginProvider = info.LoginProvider, ProviderKey=info.ProviderKey, Email=email};
             await _externalLoginTokenRepo.Add(externalLoginToken);
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                await _userManager.CreateAsync(new User { Email = email, UserName = email });
+            }
+            user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return Redirect($"{returnUrl}");
+            }
+            var createLogin = await _userManager.AddLoginAsync(user, new UserLoginInfo(info.LoginProvider, info.ProviderKey, info.ProviderDisplayName));
+            if (!createLogin.Succeeded)
+            {
+                return Redirect($"{returnUrl}");
+            }
             return Redirect($"{returnUrl}/login/external?token={externalLoginToken.Id}");
+
         }
 
         [HttpGet("external-auth-complete")]
@@ -96,7 +113,7 @@ namespace NextGameAPI.Controllers
         public async Task<IActionResult> ExternalAuthComplete(Guid tokenId)
         {
             var loginToken = await _externalLoginTokenRepo.GetByIdAsync(tokenId);
-            if (loginToken == null)
+            if (loginToken == null || string.IsNullOrEmpty(loginToken.Email) || loginToken.Expiry < DateTime.UtcNow)
             {
                 return Unauthorized();
             }
@@ -105,7 +122,15 @@ namespace NextGameAPI.Controllers
             {
                 return Ok();
             }
-            return Unauthorized();
+            if (signInResult.IsLockedOut || signInResult.IsNotAllowed)
+            {
+                return Unauthorized();
+            }
+            if (signInResult.RequiresTwoFactor)
+            {
+                //TODO: implement 2FA signin
+            }
+            return Ok();
         }
         
         [HttpPost("logout")]
