@@ -37,6 +37,7 @@ namespace NextGameAPI
                             options.UseSqlServer(Environment.GetEnvironmentVariable("connection-string")));
 
             builder.Services.AddTransient<IExternalLoginToken, ExternalLoginTokenRepository>();
+            builder.Services.AddTransient<IUserSettings, UserSettingsRepository>();
 
             //Identity
             builder.Services.AddIdentity<User, IdentityRole>()

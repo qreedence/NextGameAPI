@@ -21,17 +21,19 @@ namespace NextGameAPI.Controllers
 {
     [Route("api/auth")]
     [ApiController]
-    public class AuthController : Controller
+    public class AuthController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
         private readonly IExternalLoginToken _externalLoginTokenRepo;
+        private readonly IUserSettings _userSettingsRepo;
 
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IExternalLoginToken externalLoginTokenRepo)
+        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IExternalLoginToken externalLoginTokenRepo, IUserSettings userSettingsRepo)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _externalLoginTokenRepo = externalLoginTokenRepo;
+            _userSettingsRepo = userSettingsRepo;
         }
 
         [HttpPost("login")]
@@ -70,7 +72,7 @@ namespace NextGameAPI.Controllers
         {
             var redirectUrl = Url.Action("ExternalAuthCallback", "Auth", new { returnUrl });
             var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", redirectUrl);
-            properties.Items["prompt"] = "login";
+            //properties.Items["prompt"] = "login";
             properties.AllowRefresh = true;
             return Challenge(properties, "Google");
         }
@@ -78,7 +80,7 @@ namespace NextGameAPI.Controllers
         [HttpGet("external-auth-callback")]
         [EndpointName("ExternalAuthCallback")]
         [EndpointSummary("Handles the response from external login provider after a sign-in attempt.")]
-        public async Task<IActionResult> ExternalAuthCallbackAsync(string returnUrl = null, string remoteError = null)
+        public async Task<IActionResult> ExternalAuthCallbackAsync(string? returnUrl, string? remoteError)
         {
             ExternalLoginInfo info = await _signInManager.GetExternalLoginInfoAsync();
             if (info == null)
@@ -86,6 +88,7 @@ namespace NextGameAPI.Controllers
                 return Unauthorized("Error loading external login information.");
             }
             string email = info.Principal.FindFirstValue(ClaimTypes.Email);
+
             var externalLoginToken = new ExternalLoginToken { LoginProvider = info.LoginProvider, ProviderKey=info.ProviderKey, Email=email};
             await _externalLoginTokenRepo.Add(externalLoginToken);
             var user = await _userManager.FindByEmailAsync(email);
@@ -98,10 +101,10 @@ namespace NextGameAPI.Controllers
             {
                 return Redirect($"{returnUrl}");
             }
-            var createLogin = await _userManager.AddLoginAsync(user, new UserLoginInfo(info.LoginProvider, info.ProviderKey, info.ProviderDisplayName));
-            if (!createLogin.Succeeded)
+            var logins = await _userManager.GetLoginsAsync(user);
+            if (logins.FirstOrDefault(x => x.LoginProvider == info.LoginProvider) == null)
             {
-                return Redirect($"{returnUrl}");
+                await _userManager.AddLoginAsync(user, new UserLoginInfo(info.LoginProvider, info.ProviderKey, info.ProviderDisplayName));
             }
             return Redirect($"{returnUrl}/login/external?token={externalLoginToken.Id}");
 
@@ -181,14 +184,27 @@ namespace NextGameAPI.Controllers
             return Ok(User?.Identity?.IsAuthenticated);
         }
 
-        [HttpGet("get-user-name")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [HttpGet("get-user-profile")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserProfileDTO))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [EndpointName("GetUserName")]
+        [EndpointName("GetUserProfile")]
         [EndpointSummary("Gets the name of the logged in user.")]
         public async Task<IActionResult> GetNameAsync()
         {
-            return Ok(User?.Identity?.Name);
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null && !string.IsNullOrEmpty(user.UserName))
+            {
+                var userSettings = await _userSettingsRepo.GetUserSettingsByUserIdAsync(user.Id);
+                var userProfileDTO = new UserProfileDTO
+                {
+                    Avatar = userSettings.Avatar,
+                    UserName = user.UserName,
+                    HasPassword = !string.IsNullOrEmpty(user.PasswordHash)
+                };
+                return Ok(userProfileDTO);
+            }
+            return Unauthorized();
         }
     }
 }
