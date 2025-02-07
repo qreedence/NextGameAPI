@@ -7,6 +7,7 @@ namespace NextGameAPI.Data.Models
         public Guid Id { get; set; } = Guid.NewGuid();
         public string LoginProvider { get; set; } = "";
         public string ProviderKey { get; set; } = "";
+        public string Email { get; set; } = "";
         public DateTime Expiry { get; set; } = DateTime.UtcNow.AddMinutes(5);
     }
 }

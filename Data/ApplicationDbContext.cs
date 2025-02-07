@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using NextGameAPI.Data.Models;
+using System.Reflection.Emit;
 
 namespace NextGameAPI.Data
 {
@@ -11,6 +12,9 @@ namespace NextGameAPI.Data
         {}
 
         public DbSet<ExternalLoginToken> ExternalLoginTokens { get; set; }
+        public DbSet<UserSettings> UserSettings { get; set; }
+        public DbSet<SocialLink> SocialLinks { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
@@ -33,6 +37,12 @@ namespace NextGameAPI.Data
                     Name = Constants.Roles.User,
                     NormalizedName = Constants.Roles.User.ToUpper()
                 });
+
+            builder.Entity<User>()
+               .HasOne(u => u.Settings)
+               .WithOne(us => us.User)
+               .HasForeignKey<UserSettings>(us => us.UserId)
+               .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

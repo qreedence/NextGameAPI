@@ -6,6 +6,6 @@ namespace NextGameAPI.Data.Interfaces
     {
         public Task<ExternalLoginToken> GetByIdAsync(Guid id);
         public Task Add(ExternalLoginToken externalLoginToken);
-        public Task DeleteAsync(Guid tokenId);
+        public Task DeleteAsync(ExternalLoginToken token);
     }
 }
