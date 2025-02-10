@@ -7,14 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
 using System.Security.Claims;
-using static Azure.Core.HttpHeader;
-using System.Xml;
-using Microsoft.Identity.Client.Platforms.Features.DesktopOs.Kerberos;
-using Google.Apis.Auth;
-using Newtonsoft.Json.Serialization;
-using Newtonsoft.Json;
-using Sprache;
-using Microsoft.Extensions.Options;
 using NextGameAPI.Data.Interfaces;
 
 namespace NextGameAPI.Controllers
