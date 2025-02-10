@@ -122,15 +122,6 @@ namespace NextGameAPI
                 app.MapScalarApiReference();
             }
 
-            app.UseHsts();
-
-            app.Use((context, next) =>
-            {
-                context.Request.Host = new HostString("localhost:7145");
-                context.Request.Scheme = "https";
-                return next();
-            });
-
             app.UseHttpsRedirection();
 
             app.UseAuthentication();
