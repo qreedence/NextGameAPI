@@ -57,7 +57,7 @@ namespace NextGameAPI.Controllers
                     user.UserName = userSettingsDTO.UserName;
                     await _userManager.UpdateAsync(user);
                 }
-                await _userSettingsRepo.UpdateUserSettings(userSettingsDTO);
+                await _userSettingsRepo.UpdateUserSettingsByDTO(userSettingsDTO);
                 return Ok();
             }
             return BadRequest();

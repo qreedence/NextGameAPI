@@ -11,6 +11,7 @@ using NextGameAPI.Data;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.Data.Repositories;
+using NextGameAPI.Services.UploadThing;
 using Scalar.AspNetCore;
 using Sprache;
 using System;
@@ -110,6 +111,10 @@ namespace NextGameAPI
                     .AllowAnyMethod();
                 });
             });
+
+            //UploadThing
+            builder.Services.AddTransient<UploadThingHelpers>();
+            builder.Services.AddTransient<UploadThingService>();
 
             var app = builder.Build();
 

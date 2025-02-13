@@ -43,14 +43,25 @@ namespace NextGameAPI.Data.Repositories
             return null;
         }
 
-        public async Task UpdateUserSettings(UserSettingsDTO userSettingsDTO)
+        public async Task UpdateUserSettings(UserSettings settings)
         {
-            var userSettings = await GetUserSettingsByUserIdAsync(userSettingsDTO.UserId);
+            var userSettings = await GetUserSettingsByUserIdAsync(settings.UserId);
             if (userSettings != null)
             {
-                userSettings.Avatar = userSettingsDTO.Avatar;
-                userSettings.AccountIsPublic = userSettingsDTO.AccountIsPublic;
-                _applicationDbContext.UserSettings.Update(userSettings);
+                userSettings.Avatar = userSettings.Avatar;
+                userSettings.AccountIsPublic = userSettings.AccountIsPublic;
+                _applicationDbContext.UserSettings.Update((UserSettings)userSettings);
+                await _applicationDbContext.SaveChangesAsync();
+            }
+        }
+        public async Task UpdateUserSettingsByDTO(UserSettingsDTO settings)
+        {
+            var userSettings = await GetUserSettingsByUserIdAsync(settings.UserId);
+            if (userSettings != null)
+            {
+                userSettings.Avatar = userSettings.Avatar;
+                userSettings.AccountIsPublic = userSettings.AccountIsPublic;
+                _applicationDbContext.UserSettings.Update((UserSettings)userSettings);
                 await _applicationDbContext.SaveChangesAsync();
             }
         }
