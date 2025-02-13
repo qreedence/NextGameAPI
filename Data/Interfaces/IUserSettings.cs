@@ -7,6 +7,7 @@ namespace NextGameAPI.Data.Interfaces
     {
         public Task<UserSettings> GetUserSettingsByUserIdAsync(string userId);
         public Task<UserSettingsDTO> GetUserSettingsDTOByUserIdAsync(string userId);
-        public Task UpdateUserSettings(UserSettingsDTO userSettingsDTO);
+        public Task UpdateUserSettings(UserSettings settings);
+        public Task UpdateUserSettingsByDTO(UserSettingsDTO userSettingsDTO);
     }
 }

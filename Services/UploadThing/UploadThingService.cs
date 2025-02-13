@@ -1,6 +1,4 @@
-﻿using Azure.Core;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
@@ -15,6 +13,7 @@ namespace NextGameAPI.Services.UploadThing
         private readonly UploadThingHelpers _uploadThingHelpers;
         private readonly UserManager<User> _userManager;
         private readonly IUserSettings _userSettingsRepo;
+        private readonly HttpClient _httpClient;
 
         public UploadThingService(UploadThingHelpers uploadThingHelpers, UserManager<User> userManager, IUserSettings userSettingsRepo)
         {
@@ -22,6 +21,8 @@ namespace NextGameAPI.Services.UploadThing
             _uploadThingToken = _uploadThingHelpers.DecodeToken(Environment.GetEnvironmentVariable("uploadthing-token"));
             _userManager = userManager;
             _userSettingsRepo = userSettingsRepo;
+            _httpClient = new HttpClient();
+            _httpClient.DefaultRequestHeaders.Add("x-uploadthing-api-key", _uploadThingToken.ApiKey);
         }
 
         #region Validators
@@ -44,6 +45,64 @@ namespace NextGameAPI.Services.UploadThing
         #endregion
 
         #region Requests
+
+        private async Task<HttpResponseMessage> SendRequestAsync(HttpMethod method, string uri, StringContent content)
+        {
+            var request = new HttpRequestMessage(method, uri);
+            request.Content = content;
+            return await _httpClient.SendAsync(request);
+        }
+
+        public async Task<Dictionary<string, string>> GetPresignedUrlAsync(StringContent content)
+        {
+            var requestUri = "https://api.uploadthing.com/v7/prepareUpload";
+            var response = await SendRequestAsync(HttpMethod.Post, requestUri, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = JsonSerializer.Deserialize<Dictionary<string, string>>(response.Content.ReadAsStream());
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+            return null;
+        }
+
+        public async Task<bool> RegisterUploadAsync(string fileKey, string userName, string slug)
+        {
+            var requestUri = $"https://{_uploadThingToken.Regions.FirstOrDefault()}.ingest.uploadthing.com/route-metadata";
+            var payload = new
+            {
+                fileKeys = new[] { fileKey },
+                metadata = new
+                {
+                    user = userName,
+                    slug = slug
+                },
+                callbackUrl = $"https://{Environment.GetEnvironmentVariable("api-server-url")}/api/uploadthing/callback",
+                callbackSlug = slug,
+                awaitServerData = false,
+                isDev = false
+            };
+            var registerContent = ConvertAnonymousObjectToStringContent(payload);
+
+            var response = await SendRequestAsync(HttpMethod.Post, requestUri, registerContent);
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private async Task<bool> DeleteImageAsync(string fileKey)
+        {
+            var requestUri = "https://api.uploadthing.com/v6/deleteFiles";
+            var content = ConvertAnonymousObjectToStringContent(new { fileKeys = new[] { fileKey } });
+            var response = await SendRequestAsync(HttpMethod.Post, requestUri, content);
+            return response.IsSuccessStatusCode;
+        }
+
         public StringContent ConvertRequestToStringContent(FileUploadRequest request, string slug)
         {
             var uploadThingPrepareUploadRequest = new UploadThingPrepareUploadRequest
@@ -54,66 +113,7 @@ namespace NextGameAPI.Services.UploadThing
                 Filetype = request.Type,
                 ExpiresIn = 3600,
             };
-            var jsonPayload = JsonSerializer.Serialize(uploadThingPrepareUploadRequest);
-            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-            return content;
-        }
-
-        public async Task<Dictionary<string, string>> GetPresignedUrlAsync(StringContent content)
-        {
-            var uploadThingResponse = new Dictionary<string, string>();
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("x-uploadthing-api-key", _uploadThingToken.ApiKey);
-                var uploadThingUrl = "https://api.uploadthing.com/v7/prepareUpload";
-                var response = await client.PostAsync(uploadThingUrl, content);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Error calling UploadThing API: {response.StatusCode} - {errorContent}");
-                    return null;
-                }
-                uploadThingResponse = await JsonSerializer.DeserializeAsync<Dictionary<string, string>>(await response.Content.ReadAsStreamAsync());
-                if (uploadThingResponse == null)
-                {
-                    return null;
-                }
-            }
-            return uploadThingResponse;
-        }
-
-        public async Task<bool> RegisterUploadAsync(string fileKey, string userName, string slug)
-        {
-            using (var httpClient = new HttpClient())
-            {
-                httpClient.DefaultRequestHeaders.Add("x-uploadthing-api-key", _uploadThingToken.ApiKey);
-
-                var registerUploadUrl = $"https://{_uploadThingToken.Regions.FirstOrDefault()}.ingest.uploadthing.com/route-metadata";
-                var registerUploadPayload = new
-                {
-                    fileKeys = new[] { fileKey },
-                    metadata = new
-                    {
-                        user = userName,
-                        slug = slug,
-                    },
-                    callbackUrl = $"https://{Environment.GetEnvironmentVariable("api-server-url")}/api/uploadthing/callback",
-                    callbackSlug = slug,
-                    awaitServerData = false,
-                    isDev = false
-                };
-
-                var registerContent = new StringContent(JsonSerializer.Serialize(registerUploadPayload), Encoding.UTF8, "application/json");
-                var response = await httpClient.PostAsync(registerUploadUrl, registerContent);
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Error registering upload: {response.StatusCode} - {errorContent}");
-                    return false;
-                }
-                return true;
-            }
+            return ConvertAnonymousObjectToStringContent(uploadThingPrepareUploadRequest);
         }
 
         #endregion
@@ -186,10 +186,19 @@ namespace NextGameAPI.Services.UploadThing
                 var user = await _userManager.FindByNameAsync(userName);
                 if (user != null)
                 {
-                    var settings = await _userSettingsRepo.GetUserSettingsDTOByUserIdAsync(user.Id);
+                    var settings = await _userSettingsRepo.GetUserSettingsByUserIdAsync(user.Id);
                     if (settings != null)
                     {
+                        if (!string.IsNullOrEmpty(settings.AvatarFileKey))
+                        {
+                            var deleteImage = await DeleteImageAsync(settings.AvatarFileKey);
+                            if (!deleteImage)
+                            {
+                                return false;
+                            }
+                        }
                         settings.Avatar = fileUrl;
+                        settings.AvatarFileKey = fileKey;
                         await _userSettingsRepo.UpdateUserSettings(settings);
                         return true;
                     }
@@ -198,8 +207,11 @@ namespace NextGameAPI.Services.UploadThing
             return false;
         }
 
+        private StringContent ConvertAnonymousObjectToStringContent(object payload)
+        {
+            return new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+        }
+
         #endregion
     }
 }
-    
-
