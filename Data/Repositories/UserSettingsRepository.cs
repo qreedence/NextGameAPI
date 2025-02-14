@@ -60,7 +60,7 @@ namespace NextGameAPI.Data.Repositories
             if (userSettings != null)
             {
                 userSettings.Avatar = userSettings.Avatar;
-                userSettings.AccountIsPublic = userSettings.AccountIsPublic;
+                userSettings.AccountIsPublic = settings.AccountIsPublic;
                 _applicationDbContext.UserSettings.Update((UserSettings)userSettings);
                 await _applicationDbContext.SaveChangesAsync();
             }
