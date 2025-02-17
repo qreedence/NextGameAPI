@@ -62,7 +62,7 @@ namespace NextGameAPI.Controllers
             {
                 return Unauthorized();
             }
-
+            var user = await _userManager.GetUserAsync(User);
             var fileRoute = FileRoutes.FirstOrDefault(r => r.Slug == slug);
             var request = requestPayload.Files.FirstOrDefault();
 
@@ -80,7 +80,7 @@ namespace NextGameAPI.Controllers
             }
             string fileKey = presignedUrlResponse["key"];
 
-            var registerResponse = await _uploadThingService.RegisterUploadAsync(fileKey, User?.Identity?.Name, slug);
+            var registerResponse = await _uploadThingService.RegisterUploadAsync(fileKey, user.UserName, slug);
             if (!registerResponse)
             {
                 return BadRequest();
