@@ -11,6 +11,7 @@ using NextGameAPI.Data;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.Data.Repositories;
+using NextGameAPI.Services.Email;
 using NextGameAPI.Services.UploadThing;
 using Scalar.AspNetCore;
 using Sprache;
@@ -115,6 +116,9 @@ namespace NextGameAPI
             //UploadThing
             builder.Services.AddTransient<UploadThingHelpers>();
             builder.Services.AddTransient<UploadThingService>();
+
+            //Email Service
+            builder.Services.AddTransient<EmailService>();
 
             var app = builder.Build();
 
