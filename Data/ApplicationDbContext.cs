@@ -14,6 +14,7 @@ namespace NextGameAPI.Data
         public DbSet<ExternalLoginToken> ExternalLoginTokens { get; set; }
         public DbSet<UserSettings> UserSettings { get; set; }
         public DbSet<SocialLink> SocialLinks { get; set; }
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
