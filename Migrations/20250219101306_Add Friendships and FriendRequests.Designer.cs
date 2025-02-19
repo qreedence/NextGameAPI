@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NextGameAPI.Data;
 
@@ -11,9 +12,11 @@ using NextGameAPI.Data;
 namespace NextGameAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250219101306_Add Friendships and FriendRequests")]
+    partial class AddFriendshipsandFriendRequests
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -193,58 +196,6 @@ namespace NextGameAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ExternalLoginTokens");
-                });
-
-            modelBuilder.Entity("NextGameAPI.Data.Models.FriendRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("FromId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("SentAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ToId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FromId");
-
-                    b.HasIndex("ToId");
-
-                    b.ToTable("FriendRequests");
-                });
-
-            modelBuilder.Entity("NextGameAPI.Data.Models.Friendship", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("FriendsSince")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserAId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserBId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserAId");
-
-                    b.HasIndex("UserBId");
-
-                    b.ToTable("Friendships");
                 });
 
             modelBuilder.Entity("NextGameAPI.Data.Models.PasswordResetToken", b =>
@@ -439,36 +390,6 @@ namespace NextGameAPI.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("NextGameAPI.Data.Models.FriendRequest", b =>
-                {
-                    b.HasOne("NextGameAPI.Data.Models.User", "From")
-                        .WithMany()
-                        .HasForeignKey("FromId");
-
-                    b.HasOne("NextGameAPI.Data.Models.User", "To")
-                        .WithMany()
-                        .HasForeignKey("ToId");
-
-                    b.Navigation("From");
-
-                    b.Navigation("To");
-                });
-
-            modelBuilder.Entity("NextGameAPI.Data.Models.Friendship", b =>
-                {
-                    b.HasOne("NextGameAPI.Data.Models.User", "UserA")
-                        .WithMany()
-                        .HasForeignKey("UserAId");
-
-                    b.HasOne("NextGameAPI.Data.Models.User", "UserB")
-                        .WithMany()
-                        .HasForeignKey("UserBId");
-
-                    b.Navigation("UserA");
-
-                    b.Navigation("UserB");
                 });
 
             modelBuilder.Entity("NextGameAPI.Data.Models.SocialLink", b =>
