@@ -41,6 +41,9 @@ namespace NextGameAPI
             builder.Services.AddTransient<IExternalLoginToken, ExternalLoginTokenRepository>();
             builder.Services.AddTransient<IUserSettings, UserSettingsRepository>();
             builder.Services.AddTransient<IPasswordResetToken, PasswordResetTokenRepository>();
+            builder.Services.AddTransient<IFriendship, FriendshipRepository>();
+            builder.Services.AddTransient<IFriendRequest, FriendRequestRepository>();
+            builder.Services.AddTransient<IUser, UserRepository>();
 
             //Identity
             builder.Services.AddIdentity<User, IdentityRole>()

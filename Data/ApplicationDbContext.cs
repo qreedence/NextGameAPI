@@ -15,6 +15,8 @@ namespace NextGameAPI.Data
         public DbSet<UserSettings> UserSettings { get; set; }
         public DbSet<SocialLink> SocialLinks { get; set; }
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+        public DbSet<Friendship> Friendships { get; set; }
+        public DbSet<FriendRequest> FriendRequests { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
