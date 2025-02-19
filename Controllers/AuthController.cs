@@ -8,6 +8,7 @@ using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
 using System.Security.Claims;
 using NextGameAPI.Data.Interfaces;
+using NextGameAPI.Services.Email;
 
 namespace NextGameAPI.Controllers
 {
@@ -19,13 +20,22 @@ namespace NextGameAPI.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly IExternalLoginToken _externalLoginTokenRepo;
         private readonly IUserSettings _userSettingsRepo;
+        private readonly EmailService _emailService;
+        private readonly IPasswordResetToken _passwordResetTokenRepo;
 
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IExternalLoginToken externalLoginTokenRepo, IUserSettings userSettingsRepo)
+        public AuthController(UserManager<User> userManager, 
+            SignInManager<User> signInManager, 
+            IExternalLoginToken externalLoginTokenRepo, 
+            IUserSettings userSettingsRepo, 
+            EmailService emailService,
+            IPasswordResetToken passwordResetTokenRepo)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _externalLoginTokenRepo = externalLoginTokenRepo;
             _userSettingsRepo = userSettingsRepo;
+            _emailService = emailService;
+            _passwordResetTokenRepo = passwordResetTokenRepo;
         }
 
         [HttpPost("login")]
@@ -139,6 +149,70 @@ namespace NextGameAPI.Controllers
             Task signOut = _signInManager.SignOutAsync();
             if (signOut.IsCompletedSuccessfully)
             {
+                return Ok();
+            }
+            return BadRequest();
+        }
+
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointName("CheckPasswordResetToken")]
+        [EndpointSummary("Checks if the tokenId for a PasswordResetToken is valid.")]
+        public async Task<IActionResult> CheckPasswordResetToken(string tokenId)
+        {
+            var token = await _passwordResetTokenRepo.GetById(tokenId);
+            return token != null ? Ok(true) : NotFound(false);
+        }
+
+        [HttpPost("forgot-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [EndpointName("ForgotPassword")]
+        [EndpointSummary("Allows a user to request an email with a password reset link.")]
+        public async Task<IActionResult> ForgotPasswordAsync(string email)
+        {
+            var message = "If a user with that email exists, an email with a password reset link has been sent to that address.";
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return Ok(message);
+            }
+            try 
+            {
+                var tokenString = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var token = new PasswordResetToken { Token = tokenString, UserId = user.Id };
+                await _passwordResetTokenRepo.AddPasswordResetToken(token);
+                await _emailService.SendForgotPasswordEmail(user, token.Id);
+            } 
+            catch (Exception ex) 
+            {
+                return BadRequest(ex.Message);
+            }
+            return Ok(message);
+        }
+
+        [HttpPost("reset-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [EndpointName("ResetPassword")]
+        [EndpointSummary("Allows a user to set a new password if their tokenId matches a PasswordResetToken.")]
+        public async Task<IActionResult> ResetPassword(string tokenId, string password)
+        {
+            var token = await _passwordResetTokenRepo.GetById(tokenId);
+            if (token == null)
+            {
+                return BadRequest();
+            }
+            var user = await _userManager.FindByIdAsync(token.UserId);
+            if (user == null)
+            {
+                return BadRequest();
+            }
+            var result = await _userManager.ResetPasswordAsync(user, token.Token, password);
+            if (result.Succeeded)
+            {
+                await _passwordResetTokenRepo.RemovePasswordResetToken(tokenId);
                 return Ok();
             }
             return BadRequest();
