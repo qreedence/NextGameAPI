@@ -14,12 +14,14 @@ namespace NextGameAPI.Controllers
         private readonly UserManager<User> _userManager;
         private readonly IUser _userRepository;
         private readonly IFriendship _friendshipRepo;
+        private readonly IFriendRequest _friendRequestRepo;
 
-        public UserController(IUser userRepository, IFriendship friendshipRepo, UserManager<User> userManager)
+        public UserController(IUser userRepository, IFriendship friendshipRepo, UserManager<User> userManager, IFriendRequest friendRequestRepo)
         {
             _userRepository = userRepository;
             _friendshipRepo = friendshipRepo;
             _userManager = userManager;
+            _friendRequestRepo = friendRequestRepo;
         }
 
         [HttpGet("search")]
@@ -79,6 +81,104 @@ namespace NextGameAPI.Controllers
                 Avatar = friend.Settings.Avatar
             }).ToList();
             return Ok(friendDTOs);
+        }
+
+        [HttpGet("add-friend")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointName("AddFriend")]
+        [EndpointSummary("Send a friend request.")]
+        public async Task<IActionResult> AddFriend(string username)
+        {
+            if (User == null)
+            {
+                return Unauthorized();
+            }
+            var loggedInUser = await _userManager.FindByNameAsync(User.Identity?.Name);
+            if (loggedInUser == null)
+            {
+                return BadRequest();
+            }
+            var userToSendFriendRequestTo = await _userManager.FindByNameAsync(username);
+            if (userToSendFriendRequestTo == null)
+            {
+                return NotFound();
+            }
+
+            if (loggedInUser == userToSendFriendRequestTo)
+            {
+                return BadRequest();
+            }
+
+            try
+            {
+                await _friendRequestRepo.CreateFriendRequest(loggedInUser, userToSendFriendRequestTo);
+            } 
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            return Ok();
+        }
+
+        [HttpGet("pending-friend-requests")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointName("GetPendingFriendRequests")]
+        [EndpointSummary("Lets a user see their incoming pending friend requests.")]
+
+        public async Task<IActionResult> GetPendingFriendRequestsAsync()
+        {
+            var user = await _userManager.FindByNameAsync(User?.Identity?.Name);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            var friendRequests = await _friendRequestRepo.PendingFriendRequests(user.UserName!);
+            if (friendRequests != null && friendRequests.Count > 0)
+            {
+                var friendRequestDTOs = friendRequests.Select(fr => new FriendRequestDTO
+                {
+                    From = fr.From.UserName,
+                    To = fr.To.UserName,
+                    SentAt = fr.SentAt,
+                });
+                return Ok(friendRequestDTOs);
+            }
+            return NoContent();
+
+        }
+
+        [HttpGet("outgoing-friend-requests")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointName("OutgoingFriendRequests")]
+        [EndpointSummary("Lets a user see their outgoing friend requests.")]
+        public async Task<IActionResult> GetOutgoingFriendRequestsAsync()
+        {
+            var user = await _userManager.FindByNameAsync(User?.Identity?.Name);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            var friendRequests = await _friendRequestRepo.OutgoingFriendRequests(user.UserName!);
+            if (friendRequests != null && friendRequests.Count > 0)
+            {
+                var friendRequestDTOs = friendRequests.Select(fr => new FriendRequestDTO
+                {
+                    From = fr.From.UserName,
+                    To = fr.To.UserName,
+                    SentAt = fr.SentAt,
+                });
+                return Ok(friendRequestDTOs);
+            }
+            return NoContent();
         }
     }
 }
