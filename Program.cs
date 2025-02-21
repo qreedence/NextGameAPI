@@ -1,22 +1,15 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Microsoft.OpenApi.Models;
 using NextGameAPI.Data;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.Data.Repositories;
 using NextGameAPI.Services.Email;
+using NextGameAPI.Services.Notifications;
 using NextGameAPI.Services.UploadThing;
 using Scalar.AspNetCore;
-using Sprache;
-using System;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace NextGameAPI
 {
@@ -44,6 +37,10 @@ namespace NextGameAPI
             builder.Services.AddTransient<IFriendship, FriendshipRepository>();
             builder.Services.AddTransient<IFriendRequest, FriendRequestRepository>();
             builder.Services.AddTransient<IUser, UserRepository>();
+            builder.Services.AddTransient<INotification, NotificationRepository>();
+
+            //SignalR
+            builder.Services.AddSignalR();
 
             //Identity
             builder.Services.AddIdentity<User, IdentityRole>()
@@ -123,6 +120,10 @@ namespace NextGameAPI
 
             //Email Service
             builder.Services.AddTransient<EmailService>();
+
+            //Notification Services
+            builder.Services.AddTransient<ISignalRNotificationDispatcher, SignalRNotificationDispatcher>();
+            builder.Services.AddTransient<NotificationService>();
 
             var app = builder.Build();
 
