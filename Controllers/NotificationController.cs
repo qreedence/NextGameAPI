@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
+using NextGameAPI.DTOs;
 
 namespace NextGameAPI.Controllers
 {
@@ -20,6 +21,9 @@ namespace NextGameAPI.Controllers
 
         [HttpGet]
         [Authorize]
+        [EndpointName("GetNotifications")]
+        [EndpointSummary("Gets the logged in user's notifications.")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<NotificationDTO>))]
         public async Task<IActionResult> GetNotificationsAsync()
         {
             var user = await _userManager.FindByNameAsync(User?.Identity?.Name);
