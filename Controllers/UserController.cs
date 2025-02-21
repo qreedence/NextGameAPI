@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
+using NextGameAPI.Services.Notifications;
 
 namespace NextGameAPI.Controllers
 {
@@ -15,13 +16,15 @@ namespace NextGameAPI.Controllers
         private readonly IUser _userRepository;
         private readonly IFriendship _friendshipRepo;
         private readonly IFriendRequest _friendRequestRepo;
+        private readonly NotificationService _notificationService;
 
-        public UserController(IUser userRepository, IFriendship friendshipRepo, UserManager<User> userManager, IFriendRequest friendRequestRepo)
+        public UserController(IUser userRepository, IFriendship friendshipRepo, UserManager<User> userManager, IFriendRequest friendRequestRepo, NotificationService notificationService)
         {
             _userRepository = userRepository;
             _friendshipRepo = friendshipRepo;
             _userManager = userManager;
             _friendRequestRepo = friendRequestRepo;
+            _notificationService = notificationService;
         }
 
         [HttpGet("search")]
@@ -115,6 +118,8 @@ namespace NextGameAPI.Controllers
             try
             {
                 await _friendRequestRepo.CreateFriendRequest(loggedInUser, userToSendFriendRequestTo);
+                var notification = await _notificationService.CreateFriendRequestNotificationAsync(loggedInUser, userToSendFriendRequestTo);
+                await _notificationService.SendNotificationAsync(userToSendFriendRequestTo, notification);
             } 
             catch (Exception ex)
             {
