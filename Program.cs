@@ -6,6 +6,7 @@ using NextGameAPI.Data;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.Data.Repositories;
+using NextGameAPI.Hubs;
 using NextGameAPI.Services.Email;
 using NextGameAPI.Services.Notifications;
 using NextGameAPI.Services.UploadThing;
@@ -142,6 +143,7 @@ namespace NextGameAPI
             app.UseAuthorization();
 
             app.MapControllers();
+            app.MapHub<NotificationHub>("/notificationHub");
 
             app.Run();
         }

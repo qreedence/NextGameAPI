@@ -17,8 +17,8 @@ namespace NextGameAPI.Data.Repositories
         {
             List<User> users = await _applicationDbContext.Users
                 .Include(x => x.Settings)
-                .Where(x => x.Settings.AccountIsPublic == true 
-                    && !string.IsNullOrEmpty(x.UserName) 
+                .Where(x => x.Settings.AccountIsPublic == true
+                    && !string.IsNullOrEmpty(x.UserName)
                     && EF.Functions.Like(x.UserName, $"%{userName}%"))
                 .ToListAsync();
 
