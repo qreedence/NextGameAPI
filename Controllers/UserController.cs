@@ -104,16 +104,23 @@ namespace NextGameAPI.Controllers
             {
                 return BadRequest();
             }
+            var outGoingFriendRequests = await _friendRequestRepo.OutgoingFriendRequests(loggedInUser.UserName);
             var userToSendFriendRequestTo = await _userManager.FindByNameAsync(username);
             if (userToSendFriendRequestTo == null)
             {
                 return NotFound();
+            }
+            if (outGoingFriendRequests.Any(x => x.To == userToSendFriendRequestTo))
+            {
+                return BadRequest();
             }
 
             if (loggedInUser == userToSendFriendRequestTo)
             {
                 return BadRequest();
             }
+
+            
 
             try
             {

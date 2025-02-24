@@ -10,12 +10,12 @@ namespace NextGameAPI.Services.Notifications
 
         public SignalRNotificationDispatcher(IHubContext<NotificationHub> hubContext)
         {
-            _hubContext = hubContext;
+            _hubContext = hubContext;   
         }
         public async Task SendNotification(string username, Notification notification)
         {
             await _hubContext.Clients.Group($"user_{username}")
-            .SendAsync("ReceiveNotifications", notification);
+            .SendAsync("NotificationsUpdated", notification);
         }
     }
 }
