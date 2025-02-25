@@ -19,10 +19,23 @@ namespace NextGameAPI.Data.Repositories
                 var checkExisting = _applicationDbContext.FriendRequests.FirstOrDefault(fr => fr.From == from && fr.To == to);
                 if (checkExisting == null)
                 {
-                    await _applicationDbContext.FriendRequests.AddAsync(new FriendRequest { From = from, To = to});
+                    await _applicationDbContext.FriendRequests.AddAsync(new FriendRequest { From = from, To = to, Status = FriendRequestStatus.Pending});
                     await _applicationDbContext.SaveChangesAsync();
                 }
             }
+        }
+
+        public async Task<FriendRequest> GetById(int id)
+        {
+            var result = await _applicationDbContext.FriendRequests
+                .Include(x => x.From)
+                .Include(x => x.To)
+                .FirstOrDefaultAsync(x => x.Id == id);
+            if (result != null)
+            {
+                return result;
+            }
+            return null;
         }
 
         public async Task<List<FriendRequest>> OutgoingFriendRequests(string username)
@@ -34,7 +47,7 @@ namespace NextGameAPI.Data.Repositories
             return await _applicationDbContext.FriendRequests
                 .Include(x => x.From)
                 .Include(x => x.To)
-                .Where(fr => fr.From.UserName == username)
+                .Where(fr => fr.From.UserName == username && fr.Status == FriendRequestStatus.Pending)
                 .ToListAsync() ;
         }
 
@@ -49,6 +62,12 @@ namespace NextGameAPI.Data.Repositories
                 .Include(x => x.To)
                 .Where(fr => fr.To.UserName == username)
                 .ToListAsync();
+        }
+
+        public async Task UpdateFriendRequestAsync(FriendRequest friendRequest)
+        {
+            _applicationDbContext.FriendRequests.Update(friendRequest);
+            await _applicationDbContext.SaveChangesAsync();
         }
     }
 }

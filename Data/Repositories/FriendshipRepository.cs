@@ -14,6 +14,15 @@ namespace NextGameAPI.Data.Repositories
             _applicationDbContext = applicationDbContext;
         }
 
+        public async Task CreateFriendship(Friendship friendship)
+        {
+            if (friendship != null)
+            {
+                await _applicationDbContext.Friendships.AddAsync(friendship);
+                await _applicationDbContext.SaveChangesAsync();
+            }
+        }
+
         public async Task<List<User>> GetFriendsForUserAsync(User user)
         {
             if (user == null)
