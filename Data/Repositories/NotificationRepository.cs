@@ -29,6 +29,17 @@ namespace NextGameAPI.Data.Repositories
             }
         }
 
+        public async Task MarkNotificationAsSeen(Guid id)
+        {
+            var notification = await _applicationDbContext.Notifications.FirstOrDefaultAsync(n => n.Id == id);
+            if (notification != null && notification.Seen == false)
+            {
+                notification.Seen = true;
+            }
+            _applicationDbContext.Notifications.Update(notification);
+            await _applicationDbContext.SaveChangesAsync();
+        }
+
         public async Task<List<Notification>> GetNotificationsForUser(User user)
         {
             if (user != null)
@@ -36,7 +47,10 @@ namespace NextGameAPI.Data.Repositories
                 var notifications = await _applicationDbContext.Notifications.Where(n => n.User == user).ToListAsync();
                 if (notifications.Count() > 0)
                 {
-                    return notifications;
+                    return notifications
+                        .OrderByDescending(n => n.CreatedAt)
+                        .Take(10)
+                        .ToList();
                 }
             }
             return new List<Notification>();

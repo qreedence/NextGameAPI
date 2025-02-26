@@ -32,7 +32,8 @@ namespace NextGameAPI.Services.Notifications
             var notification = new Notification { 
                 Type = NotificationType.FriendRequest, 
                 User = to, 
-                Data = $"You have received a friend request from {from.UserName}" };
+                Data = $"You have received a friend request from {from.UserName}",
+                ActionUrl = $"/u/{from.UserName}"};
 
             await _notificationRepo.CreateNotification(notification);
             return notification;
