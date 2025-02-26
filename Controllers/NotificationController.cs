@@ -19,6 +19,23 @@ namespace NextGameAPI.Controllers
             _userManager = userManager;
         }
 
+        [HttpPut]
+        [Authorize]
+        [EndpointName("MarkNotificationAsSeen")]
+        [EndpointSummary("Marks a notification as seen.")]
+        public async Task<IActionResult> MarkNotificationAsSeen(Guid id)
+        {
+            try
+            {
+                await _notificationRepo.MarkNotificationAsSeen(id);
+                return Ok();
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
         [HttpGet]
         [Authorize]
         [EndpointName("GetNotifications")]

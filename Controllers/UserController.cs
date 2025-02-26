@@ -150,9 +150,12 @@ namespace NextGameAPI.Controllers
 
             try
             {
-                await _friendRequestRepo.CreateFriendRequest(loggedInUser, userToSendFriendRequestTo);
-                var notification = await _notificationService.CreateFriendRequestNotificationAsync(loggedInUser, userToSendFriendRequestTo);
-                await _notificationService.SendNotificationAsync(userToSendFriendRequestTo, notification);
+                var createdFriendRequest = await _friendRequestRepo.CreateFriendRequest(loggedInUser, userToSendFriendRequestTo);
+                if (createdFriendRequest)
+                {
+                    var notification = await _notificationService.CreateFriendRequestNotificationAsync(loggedInUser, userToSendFriendRequestTo);
+                    await _notificationService.SendNotificationAsync(userToSendFriendRequestTo, notification);
+                }
             } 
             catch (Exception ex)
             {
@@ -274,7 +277,7 @@ namespace NextGameAPI.Controllers
             return NoContent();
         }
 
-        [HttpGet("friend-request-response")]
+        [HttpPost("friend-request-response")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -282,9 +285,9 @@ namespace NextGameAPI.Controllers
         [EndpointName("FriendRequestResponse")]
         [EndpointSummary("Lets a user respond to a friend request by either accepting or denying it.")]
 
-        public async Task<IActionResult> FriendRequestResponseAsync(int friendRequestId, FriendRequestStatus status)
+        public async Task<IActionResult> FriendRequestResponseAsync(FriendRequestResponse friendRequestResponse)
         {
-            var friendRequest = await _friendRequestRepo.GetById(friendRequestId);
+            var friendRequest = await _friendRequestRepo.GetById(friendRequestResponse.Id);
             if (friendRequest == null)
             {
                 return NotFound();
@@ -297,9 +300,9 @@ namespace NextGameAPI.Controllers
 
             if (friendRequest.Status == FriendRequestStatus.Pending)
             {
-                if (status == FriendRequestStatus.Accepted || status == FriendRequestStatus.Declined)
+                if (friendRequestResponse.Status == FriendRequestStatus.Accepted || friendRequestResponse.Status == FriendRequestStatus.Declined)
                 {
-                    friendRequest.Status = status;
+                    friendRequest.Status = friendRequestResponse.Status;
                 }
             }
             else
@@ -309,7 +312,6 @@ namespace NextGameAPI.Controllers
 
             try
             {
-
                 await _friendRequestRepo.UpdateFriendRequestAsync(friendRequest);
                 if (friendRequest.Status == FriendRequestStatus.Accepted)
                 {
