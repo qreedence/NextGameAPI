@@ -27,6 +27,32 @@ namespace NextGameAPI.Controllers
             _notificationService = notificationService;
         }
 
+        [HttpGet("find-by-username")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserDTO))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointName("FindByUsername")]
+        [EndpointSummary("Get the public profile of the first user with an exact username match, if the user exists.")]
+        [Authorize]
+        public async Task<IActionResult> GetPublicProfileByUsernameAsync(string userName)
+        {
+            if (string.IsNullOrEmpty(userName))
+            {
+                return BadRequest("Username is required.");
+            }
+            var user = await _userRepository.FindByUsernameAsync(userName);
+            if (user != null)
+            {
+                var userDTO = new UserDTO
+                {
+                    Username = user.UserName!,
+                    Avatar = user.Settings.Avatar
+                };
+                return Ok(userDTO);
+            }
+            return NotFound();
+        }
+
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserDTO>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -135,9 +161,65 @@ namespace NextGameAPI.Controllers
             return Ok();
         }
 
+
+        [HttpGet("get-friendship-status")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FriendshipStatusDTO))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointName("GetFriendshipStatus")]
+        [EndpointSummary("Get the friendship status of the logged in user and another user.")]
+        public async Task<IActionResult> GetFriendshipStatusAsync(string otherUserUsername)
+        {
+            var user = await _userManager.FindByNameAsync(User?.Identity?.Name!);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var otherUser = await _userManager.FindByNameAsync(otherUserUsername);
+            if (otherUser == null)
+            {
+                return NotFound();
+            }
+
+            var friendshipStatus = new FriendshipStatusDTO
+            {
+                Status = FriendshipStatus.None
+            };
+
+            var friendship = await _friendshipRepo.CheckExistingFriendshipAsync(user, otherUser);
+            if (friendship.Item1 == true)
+            {
+                friendshipStatus.Status = FriendshipStatus.Friends;
+                friendshipStatus.FriendshipId = friendship.Item2;
+                return Ok(friendshipStatus);
+            }
+
+            var friendRequest = await _friendRequestRepo.CheckExistingFriendRequestAsync(user, otherUser);
+            if (friendRequest != null)
+            {
+                if (friendRequest.Status == FriendRequestStatus.Pending)
+                {
+                    friendshipStatus.FriendRequestId = friendRequest.Id;
+                    friendshipStatus.FriendshipId = null;
+                    if (friendRequest.From.Id == user.Id)
+                    {
+                        friendshipStatus.Status = FriendshipStatus.OutgoingFriendRequest;
+                    }
+                    if (friendRequest.To.Id == user.Id)
+                    {
+                        friendshipStatus.Status = FriendshipStatus.IncomingFriendRequest;
+                    }
+                }
+            }
+
+            return Ok(friendshipStatus);
+        }
+
         [HttpGet("pending-friend-requests")]
         [Authorize]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FriendRequestDTO>))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [EndpointName("GetPendingFriendRequests")]
@@ -166,7 +248,7 @@ namespace NextGameAPI.Controllers
 
         [HttpGet("outgoing-friend-requests")]
         [Authorize]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FriendRequestDTO>))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [EndpointName("OutgoingFriendRequests")]
@@ -237,7 +319,7 @@ namespace NextGameAPI.Controllers
                         UserB = friendRequest.To,
 
                     };
-                    await _friendshipRepo.CreateFriendship(friendship);
+                    await _friendshipRepo.CreateFriendshipAsync(friendship);
                 }
                 return Ok();
             }

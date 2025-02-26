@@ -12,6 +12,24 @@ namespace NextGameAPI.Data.Repositories
         {
             _applicationDbContext = applicationDbContext;
         }
+
+        public async Task<FriendRequest> CheckExistingFriendRequestAsync(User userA, User userB)
+        {
+            if (userA != null && userB != null)
+            {
+                var request = await _applicationDbContext.FriendRequests
+                    .Where(fr =>
+                        (fr.From.Id == userA.Id && fr.To.Id == userB.Id) ||
+                        (fr.From.Id == userB.Id && fr.To.Id == userA.Id))
+                    .FirstOrDefaultAsync();
+                if (request != null)
+                {
+                    return request;
+                }
+            }
+            return null;
+        }
+
         public async Task CreateFriendRequest(User from, User to)
         {
             if (from != null && to != null)

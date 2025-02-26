@@ -4,7 +4,8 @@ namespace NextGameAPI.Data.Interfaces
 {
     public interface IFriendship
     {
-        Task CreateFriendship(Friendship friendship);
+        Task<(bool, int)> CheckExistingFriendshipAsync(User userA, User userB);
+        Task CreateFriendshipAsync(Friendship friendship);
         Task<List<User>> GetFriendsForUserAsync(User user);
     }
 }

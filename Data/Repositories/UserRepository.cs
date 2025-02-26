@@ -13,6 +13,17 @@ namespace NextGameAPI.Data.Repositories
             _applicationDbContext = applicationDbContext;
         }
 
+        public async Task<User?> FindByUsernameAsync(string username)
+        {
+           if (!string.IsNullOrEmpty(username))
+            {
+                return await _applicationDbContext.Users
+                    .Include(u => u.Settings)
+                    .FirstOrDefaultAsync(u => u.UserName == username);
+            }
+            return null;
+        }
+
         public async Task<List<User>> SearchUsersAsync(string userName)
         {
             List<User> users = await _applicationDbContext.Users
