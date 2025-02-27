@@ -146,8 +146,6 @@ namespace NextGameAPI.Controllers
                 return BadRequest();
             }
 
-            
-
             try
             {
                 var createdFriendRequest = await _friendRequestRepo.CreateFriendRequest(loggedInUser, userToSendFriendRequestTo);

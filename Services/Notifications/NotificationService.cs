@@ -7,11 +7,13 @@ namespace NextGameAPI.Services.Notifications
     {
         private readonly INotification _notificationRepo;
         private readonly ISignalRNotificationDispatcher _notificationDispatcher;
+        private readonly IUserSettings _userSettingsRepo;
 
-        public NotificationService(INotification notificationRepo, ISignalRNotificationDispatcher notificationDispatcher)
+        public NotificationService(INotification notificationRepo, ISignalRNotificationDispatcher notificationDispatcher, IUserSettings userSettingsRepo)
         {
             _notificationRepo = notificationRepo;
             _notificationDispatcher = notificationDispatcher;
+            _userSettingsRepo = userSettingsRepo;
         }
 
         public async Task SendNotificationAsync(User user, Notification notification)
@@ -29,11 +31,21 @@ namespace NextGameAPI.Services.Notifications
                 return null;
             }
 
-            var notification = new Notification { 
-                Type = NotificationType.FriendRequest, 
-                User = to, 
+            var settings = await _userSettingsRepo.GetUserSettingsDTOByUserIdAsync(from.Id);
+            string avatarUrl = "";
+            if (settings != null)
+            {
+                avatarUrl = settings.Avatar;
+            }
+
+            var notification = new Notification
+            {
+                Type = NotificationType.FriendRequest,
+                User = to,
                 Data = $"You have received a friend request from {from.UserName}",
-                ActionUrl = $"/u/{from.UserName}"};
+                ActionUrl = $"/u/{from.UserName}",
+                AvatarUrl = avatarUrl,
+            };
 
             await _notificationRepo.CreateNotification(notification);
             return notification;

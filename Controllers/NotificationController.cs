@@ -48,7 +48,23 @@ namespace NextGameAPI.Controllers
             {
                 return Unauthorized();
             }
-            return Ok(await _notificationRepo.GetNotificationsForUser(user));
+            var notifications = await _notificationRepo.GetNotificationsForUser(user);
+            if (notifications == null || notifications.Count == 0)
+            {
+                return Ok(new List<NotificationDTO>());
+            }
+            var notificationDTOs = notifications.Select(notification => new NotificationDTO
+            {
+                Id = notification.Id,
+                Type = notification.Type, 
+                Data = notification.Data,
+                ActionUrl = notification.ActionUrl,
+                Seen = notification.Seen,
+                CreatedAt = notification.CreatedAt,
+                AvatarUrl = notification.AvatarUrl,
+            }).ToList();
+
+            return Ok(notificationDTOs);
         }
     }
 }
