@@ -6,6 +6,7 @@ namespace NextGameAPI.Data.Interfaces
     {
         Task<(bool, int)> CheckExistingFriendshipAsync(User userA, User userB);
         Task CreateFriendshipAsync(Friendship friendship);
+        Task Unfriend(User user, User friendToRemove);
         Task<List<User>> GetFriendsForUserAsync(User user);
     }
 }

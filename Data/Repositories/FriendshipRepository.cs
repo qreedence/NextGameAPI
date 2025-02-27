@@ -61,5 +61,33 @@ namespace NextGameAPI.Data.Repositories
 
             return friends;
         }
+
+        public async Task Unfriend(User user, User friendToRemove)
+        {
+            var friendship = await FindFriendship(user, friendToRemove);
+            if (friendship != null)
+            {
+                _applicationDbContext.Friendships.Remove(friendship);
+                await _applicationDbContext.SaveChangesAsync();
+            }
+        }
+
+        private async Task<Friendship> FindFriendship(User userA, User userB)
+        {
+            if (userA != null && userB != null)
+            {
+                var friendship = await _applicationDbContext.Friendships
+                    //.Include(f => f.UserA)
+                    //.Include(f => f.UserB)
+                    .FirstOrDefaultAsync(f => 
+                    (f.UserA.Id == userA.Id && f.UserB.Id == userB.Id) || 
+                    (f.UserA.Id == userB.Id && f.UserB.Id == userA.Id));
+                if (friendship != null)
+                {
+                    return friendship;
+                }
+            }
+            return null;
+        }
     }
 }
