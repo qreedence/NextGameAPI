@@ -46,7 +46,8 @@ namespace NextGameAPI.Controllers
                 var userDTO = new UserDTO
                 {
                     Username = user.UserName!,
-                    Avatar = user.Settings.Avatar
+                    Avatar = user.Settings.Avatar,
+                    AccountIsPublic = user.Settings.AccountIsPublic
                 };
                 return Ok(userDTO);
             }
@@ -72,7 +73,8 @@ namespace NextGameAPI.Controllers
                 var userDTOs = users.Where(u => u.UserName != User?.Identity?.Name).Select(user => new UserDTO
                 {
                     Username = user.UserName!,
-                    Avatar = user.Settings.Avatar
+                    Avatar = user.Settings.Avatar,
+                    AccountIsPublic = user.Settings.AccountIsPublic
                 }).ToList();
                 return Ok(userDTOs);
             }
@@ -107,7 +109,8 @@ namespace NextGameAPI.Controllers
             var friendDTOs = friends.Select(friend => new UserDTO
             {
                 Username = friend.UserName!,
-                Avatar = friend.Settings.Avatar
+                Avatar = friend.Settings.Avatar,
+                AccountIsPublic = user.Settings.AccountIsPublic
             }).ToList();
             return Ok(friendDTOs);
         }
