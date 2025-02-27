@@ -102,7 +102,7 @@ namespace NextGameAPI.Controllers
             var friends = await _friendshipRepo.GetFriendsForUserAsync(user);
             if (friends.Count <= 0)
             {
-               return NotFound();
+               return Ok(new List<UserDTO>());
             }
             var friendDTOs = friends.Select(friend => new UserDTO
             {
@@ -112,7 +112,7 @@ namespace NextGameAPI.Controllers
             return Ok(friendDTOs);
         }
 
-        [HttpGet("add-friend")]
+        [HttpPost("add-friend")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -162,6 +162,35 @@ namespace NextGameAPI.Controllers
                 return BadRequest(ex.Message);
             }
             return Ok();
+        }
+
+        [HttpPost("unfriend")]
+        [Authorize]
+        [EndpointName("Unfriend")]
+        [EndpointSummary("Let a user remove a friend from their friend list")]
+        public async Task<IActionResult> UnfriendAsync(string username)
+        {
+            var user = await _userManager.FindByNameAsync(User.Identity.Name);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var friendToRemove = await _userManager.FindByNameAsync(username);
+            if (friendToRemove == null)
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                await _friendshipRepo.Unfriend(user, friendToRemove);
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return BadRequest();
+            }
         }
 
 
@@ -216,7 +245,6 @@ namespace NextGameAPI.Controllers
                     }
                 }
             }
-
             return Ok(friendshipStatus);
         }
 

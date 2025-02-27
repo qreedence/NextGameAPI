@@ -38,7 +38,7 @@ namespace NextGameAPI.Data.Repositories
                 var checkExisting = await _applicationDbContext.FriendRequests
                     .Include(fr => fr.From)
                     .Include(fr => fr.To)
-                    .FirstOrDefaultAsync(fr => fr.From.Id == from.Id && fr.To.Id == to.Id && fr.Status != FriendRequestStatus.Declined);
+                    .FirstOrDefaultAsync(fr => fr.From.Id == from.Id && fr.To.Id == to.Id && fr.Status == FriendRequestStatus.Pending);
                 if (checkExisting == null)
                 {
                     await _applicationDbContext.FriendRequests.AddAsync(new FriendRequest { From = from, To = to, Status = FriendRequestStatus.Pending});
