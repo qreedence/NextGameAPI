@@ -23,11 +23,38 @@ namespace NextGameAPI.Controllers
         [Authorize]
         [EndpointName("MarkNotificationAsSeen")]
         [EndpointSummary("Marks a notification as seen.")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> MarkNotificationAsSeen(Guid id)
         {
             try
             {
                 await _notificationRepo.MarkNotificationAsSeen(id);
+                return Ok();
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpPut("mark-all-as-seen")]
+        [Authorize]
+        [EndpointName("MarkAllNotificationsAsSeen")]
+        [EndpointSummary("Marks all notifications as seen")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> MarkAllNotificationsAsSeen()
+        {
+            var user = await _userManager.FindByNameAsync(User?.Identity?.Name);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            try
+            {
+                await _notificationRepo.MarkAllNotificationsAsSeen(user.Id);
                 return Ok();
             }
             catch

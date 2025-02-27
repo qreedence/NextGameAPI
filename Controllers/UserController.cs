@@ -69,14 +69,14 @@ namespace NextGameAPI.Controllers
             var users = await _userRepository.SearchUsersAsync(userName);
             if (users != null &&  users.Count > 0)
             {
-                var userDTOs = users.Select(user => new UserDTO
+                var userDTOs = users.Where(u => u.UserName != User?.Identity?.Name).Select(user => new UserDTO
                 {
                     Username = user.UserName!,
                     Avatar = user.Settings.Avatar
                 }).ToList();
                 return Ok(userDTOs);
             }
-            return NotFound();
+            return Ok(new List<UserDTO>());
         }
 
         [HttpGet("friends")]

@@ -40,6 +40,26 @@ namespace NextGameAPI.Data.Repositories
             await _applicationDbContext.SaveChangesAsync();
         }
 
+        public async Task MarkAllNotificationsAsSeen (string userId)
+        {
+            //Load-Modify-Save Pattern
+
+            //var notifications = await _applicationDbContext.Notifications.Where(n => n.User.Id == userId && n.Seen == false).ToListAsync();
+            //if (notifications != null && notifications.Count > 0)
+            //{
+            //    foreach (var notification in notifications)
+            //    {
+            //        notification.Seen = true;
+            //    }
+            //    _applicationDbContext.UpdateRange(notifications); 
+            //    await _applicationDbContext.SaveChangesAsync();
+
+            //Bulk update
+            await _applicationDbContext.Notifications
+                .Where(n => n.User.Id == userId && n.Seen == false)
+                .ExecuteUpdateAsync(s => s.SetProperty(n => n.Seen, true));
+        }
+
         public async Task<List<Notification>> GetNotificationsForUser(User user)
         {
             if (user != null)

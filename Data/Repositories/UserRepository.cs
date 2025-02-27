@@ -30,7 +30,7 @@ namespace NextGameAPI.Data.Repositories
                 .Include(x => x.Settings)
                 .Where(x => x.Settings.AccountIsPublic == true
                     && !string.IsNullOrEmpty(x.UserName)
-                    && EF.Functions.Like(x.UserName, $"%{userName}%"))
+                    && x.UserName.StartsWith(userName))
                 .ToListAsync();
 
             return users;
