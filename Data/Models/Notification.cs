@@ -1,4 +1,6 @@
-﻿namespace NextGameAPI.Data.Models
+﻿using NextGameAPI.Constants;
+
+namespace NextGameAPI.Data.Models
 {
     public class Notification
     {
@@ -11,11 +13,6 @@
         public bool Seen { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? ViewedAt { get; set; }
-    }
-
-    public enum NotificationType
-    {
-        FriendRequest,
     }
 }
 

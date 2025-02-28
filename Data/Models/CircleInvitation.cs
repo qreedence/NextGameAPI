@@ -3,9 +3,9 @@
     public class CircleInvitation
     {
         public int Id { get; set; }
-        public User From { get; set; }
-        public User To { get; set; }
-        public Circle Circle { get; set; }
+        public required User From { get; set; }
+        public required User To { get; set; }
+        public required Circle Circle { get; set; }
         public DateTime SentAt { get; set; } = DateTime.UtcNow;
     }
 }

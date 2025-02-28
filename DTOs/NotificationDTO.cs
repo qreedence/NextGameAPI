@@ -1,4 +1,4 @@
-﻿using NextGameAPI.Data.Models;
+﻿using NextGameAPI.Constants;
 
 namespace NextGameAPI.DTOs
 {
