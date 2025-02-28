@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NextGameAPI.Data;
 
@@ -11,9 +12,11 @@ using NextGameAPI.Data;
 namespace NextGameAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250228084134_Add circles")]
+    partial class Addcircles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -190,37 +193,6 @@ namespace NextGameAPI.Migrations
                     b.HasIndex("CreatedById");
 
                     b.ToTable("Circles");
-                });
-
-            modelBuilder.Entity("NextGameAPI.Data.Models.CircleInvitation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<Guid>("CircleId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("FromId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("SentAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ToId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CircleId");
-
-                    b.HasIndex("FromId");
-
-                    b.HasIndex("ToId");
-
-                    b.ToTable("CircleInvitations");
                 });
 
             modelBuilder.Entity("NextGameAPI.Data.Models.CircleMember", b =>
@@ -578,29 +550,6 @@ namespace NextGameAPI.Migrations
                         .HasForeignKey("CreatedById");
 
                     b.Navigation("CreatedBy");
-                });
-
-            modelBuilder.Entity("NextGameAPI.Data.Models.CircleInvitation", b =>
-                {
-                    b.HasOne("NextGameAPI.Data.Models.Circle", "Circle")
-                        .WithMany()
-                        .HasForeignKey("CircleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("NextGameAPI.Data.Models.User", "From")
-                        .WithMany()
-                        .HasForeignKey("FromId");
-
-                    b.HasOne("NextGameAPI.Data.Models.User", "To")
-                        .WithMany()
-                        .HasForeignKey("ToId");
-
-                    b.Navigation("Circle");
-
-                    b.Navigation("From");
-
-                    b.Navigation("To");
                 });
 
             modelBuilder.Entity("NextGameAPI.Data.Models.CircleMember", b =>

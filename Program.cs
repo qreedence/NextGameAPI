@@ -7,8 +7,10 @@ using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.Data.Repositories;
 using NextGameAPI.Hubs;
+using NextGameAPI.Services.Circles;
 using NextGameAPI.Services.Email;
 using NextGameAPI.Services.Notifications;
+using NextGameAPI.Services.Transactions;
 using NextGameAPI.Services.UploadThing;
 using Scalar.AspNetCore;
 
@@ -39,6 +41,9 @@ namespace NextGameAPI
             builder.Services.AddTransient<IFriendRequest, FriendRequestRepository>();
             builder.Services.AddTransient<IUser, UserRepository>();
             builder.Services.AddTransient<INotification, NotificationRepository>();
+            builder.Services.AddTransient<ICircle, CircleRepository>();
+            builder.Services.AddTransient<ICircleMember, CircleMemberRepository>();
+            builder.Services.AddTransient<ICircleInvitation, CircleInvitationRepository>();
 
             //SignalR
             builder.Services.AddSignalR();
@@ -115,6 +120,9 @@ namespace NextGameAPI
                 });
             });
 
+            //Transaction Service
+            builder.Services.AddTransient<TransactionService>();
+
             //UploadThing
             builder.Services.AddTransient<UploadThingHelpers>();
             builder.Services.AddTransient<UploadThingService>();
@@ -125,6 +133,9 @@ namespace NextGameAPI
             //Notification Services
             builder.Services.AddTransient<ISignalRNotificationDispatcher, SignalRNotificationDispatcher>();
             builder.Services.AddTransient<NotificationService>();
+
+            //Circle Service
+            builder.Services.AddTransient<CircleService>();
 
             var app = builder.Build();
 
