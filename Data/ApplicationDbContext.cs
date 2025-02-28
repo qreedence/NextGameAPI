@@ -10,7 +10,8 @@ namespace NextGameAPI.Data
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {}
-
+        public DbSet<Circle> Circles { get; set; }
+        public DbSet<CircleMember> CircleMembers { get; set; }
         public DbSet<ExternalLoginToken> ExternalLoginTokens { get; set; }
         public DbSet<UserSettings> UserSettings { get; set; }
         public DbSet<SocialLink> SocialLinks { get; set; }

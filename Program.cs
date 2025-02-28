@@ -39,6 +39,8 @@ namespace NextGameAPI
             builder.Services.AddTransient<IFriendRequest, FriendRequestRepository>();
             builder.Services.AddTransient<IUser, UserRepository>();
             builder.Services.AddTransient<INotification, NotificationRepository>();
+            builder.Services.AddTransient<ICircle, CircleRepository>();
+            builder.Services.AddTransient<ICircleMember, CircleMemberRepository>();
 
             //SignalR
             builder.Services.AddSignalR();
