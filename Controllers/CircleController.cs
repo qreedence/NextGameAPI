@@ -139,5 +139,37 @@ namespace NextGameAPI.Controllers
             }
             return BadRequest();
         }
+
+        [HttpPut("leave")]
+        [Authorize]
+        [EndpointName("LeaveCircle")]
+        [EndpointDescription("Allow a user to leave a circle")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> LeaveCircleAsync(Guid circleId)
+        {
+            var user = await _userManager.FindByNameAsync(User?.Identity?.Name);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var circles = await _circleService.GetCirclesByUserAsync(user.Id);
+            if (circles == null || circles.Count == 0 || circles.FirstOrDefault(c => c.Id == circleId) == null)
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                await _circleService.LeaveCircleAsync(user, circleId);
+                return Ok();
+            }
+            catch(Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
     }
 }

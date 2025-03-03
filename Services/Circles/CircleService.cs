@@ -113,6 +113,23 @@ namespace NextGameAPI.Services.Circles
             return new List<CircleDTO>();
         }
 
+        public async Task LeaveCircleAsync(User user, Guid circleId)
+        {
+            var circle = await _circleRepository.GetByIdAsync(circleId);
+            if (circle != null)
+            {
+                var circleMember = await _circleMemberRepository.GetByCircleIdAndUserIdAsync(circleId, user.Id);
+                await _transactionService.ExecuteInTransactionAsync(async () =>
+                {
+                    if (circleMember != null)
+                    {
+                        circleMember.IsActive = false;
+                        circleMember.LeftAt = DateTime.UtcNow;
+                        await _circleMemberRepository.UpdateCircleMemberAsync(circleMember);
+                    }
+                });
+            }
+        }
     }
 }
 
