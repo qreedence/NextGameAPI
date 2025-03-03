@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
+using System.Security.Cryptography;
 
 namespace NextGameAPI.Data.Repositories
 {
@@ -38,13 +39,42 @@ namespace NextGameAPI.Data.Repositories
         {
             if (id != Guid.Empty)
             {
-                var circle = await _applicationDbContext.Circles.FirstOrDefaultAsync(x => x.Id == id);
+                var circle = await _applicationDbContext.Circles
+                    .Include(c => c.CreatedBy)
+                        .ThenInclude(cb => cb.Settings)
+                    .Include(c => c.CircleMembers.Where(cm => cm.IsActive))
+                        .ThenInclude(cm => cm.User)
+                            .ThenInclude(cm => cm.Settings)
+                    .Where(c => c.CircleMembers
+                        .Any(cm => cm.IsActive))
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
                 if (circle != null)
                 {
                     return circle;
                 }
             }
             return null;
+        }
+
+        public async Task<List<Circle>> GetCirclesByUserId(string userId)
+        {
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var circles = await _applicationDbContext.Circles
+                    .Include(c => c.CreatedBy)
+                    .Include(c => c.CircleMembers.Where(cm => cm.IsActive))
+                        .ThenInclude(cm => cm.User)
+                    .ThenInclude(cm => cm.Settings)
+                    .Where(c => c.CircleMembers
+                        .Any(cm => cm.User.Id == userId))
+                    .ToListAsync();
+                if (circles != null && circles.Count > 0)
+                {
+                    return circles;
+                }
+            }
+            return new List<Circle>();
         }
 
         public async Task UpdateCircleAsync(Circle circle)

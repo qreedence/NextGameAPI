@@ -48,7 +48,7 @@ namespace NextGameAPI.Data.Repositories
             }
         }
 
-        public async Task<CircleMember> GetByIdAsync(Guid circleMemberId)
+        public async Task<CircleMember?> GetByIdAsync(Guid circleMemberId)
         {
             if (circleMemberId != Guid.Empty)
             {
@@ -59,6 +59,19 @@ namespace NextGameAPI.Data.Repositories
                 }
             }
             return null;
+        }
+
+        public async Task<CircleMember?> GetByCircleIdAndUserIdAsync(Guid circleId, string userId)
+        {
+            if (string.IsNullOrEmpty(userId) && circleId == Guid.Empty)
+            {
+                return null;
+            }
+
+            return await _applicationDbContext.CircleMembers
+                .Include(cm => cm.Circle)
+                .Include(cm => cm.User)
+                .FirstOrDefaultAsync(cm => cm.User.Id == userId && cm.Circle.Id == circleId);
         }
 
         public async Task UpdateCircleMemberAsync(CircleMember circleMember)
