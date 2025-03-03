@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
+using NextGameAPI.DTOs;
 using NextGameAPI.Services.Circles;
 
 namespace NextGameAPI.Controllers
@@ -23,12 +24,56 @@ namespace NextGameAPI.Controllers
             _friendshipRepository = friendshipRepository;
         }
 
+        [HttpGet]
+        [Authorize]
+        [EndpointName("GetCircleById")]
+        [EndpointDescription("Get a circle by ID.")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CircleDTO))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetCircleByIdAsync(Guid circleId)
+        {
+            var circle = await _circleService.GetCircleByIdAsync(circleId);
+            if (circle == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(_circleService.ConvertCirclesToCircleDTOs(new List<Circle>{circle}).FirstOrDefault());
+
+        }
+
+        [HttpGet("by-user")]
+        [Authorize]
+        [EndpointName("GetCirclesByUser")]
+        [EndpointDescription("Get a list of circles which the user is a part of.")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<CircleDTO>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetCirclesByUserAsync()
+        {
+            var user = await _userManager.FindByNameAsync(User?.Identity?.Name);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var circles = await _circleService.GetCirclesByUserAsync(user.Id);
+            if (circles == null ||  circles.Count == 0)
+            {
+                return Ok(new List<CircleDTO>());
+            }
+
+            return Ok(_circleService.ConvertCirclesToCircleDTOs(circles));
+            
+        }
+
         [HttpPost("create")]
         [Authorize]
         [EndpointName("CreateCircle")]
         [EndpointDescription("Lets a user create a circle")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-            [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateCircleAsync(string circleName)
         {
             if (!string.IsNullOrEmpty(User?.Identity?.Name))

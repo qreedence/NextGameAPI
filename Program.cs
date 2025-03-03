@@ -8,6 +8,7 @@ using NextGameAPI.Data.Models;
 using NextGameAPI.Data.Repositories;
 using NextGameAPI.Hubs;
 using NextGameAPI.Services.Circles;
+using NextGameAPI.Services.DTOConverters;
 using NextGameAPI.Services.Email;
 using NextGameAPI.Services.Notifications;
 using NextGameAPI.Services.Transactions;
@@ -136,6 +137,9 @@ namespace NextGameAPI
 
             //Circle Service
             builder.Services.AddTransient<CircleService>();
+
+            //DTO Converter Services
+            builder.Services.AddTransient<UserConverter>();
 
             var app = builder.Build();
 

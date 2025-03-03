@@ -6,6 +6,7 @@ namespace NextGameAPI.Data.Interfaces
     {
         Task CreateCircleAsync(Circle circle);
         Task<Circle> GetByIdAsync(Guid id);
+        Task<List<Circle>> GetCirclesByUserId(string userId);
         Task UpdateCircleAsync(Circle circle);
         Task DeleteCircleByIdAsync(Guid id);
     }
