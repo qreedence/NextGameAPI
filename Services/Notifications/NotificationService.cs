@@ -57,7 +57,7 @@ namespace NextGameAPI.Services.Notifications
                 Type = NotificationType.CircleInvitation,
                 User = circleInvitation.To,
                 Data = $"{circleInvitation.From.UserName} has invited you to join {circleInvitation.Circle.Name}.",
-                ActionUrl = "/placeholder",
+                ActionUrl = $"/c/{circleInvitation.Circle.Id}",
                 AvatarUrl = await GetAvatar(circleInvitation.From.Id),
             };
 

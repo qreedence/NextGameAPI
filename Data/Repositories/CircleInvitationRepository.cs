@@ -13,6 +13,13 @@ namespace NextGameAPI.Data.Repositories
             _applicationDbContext = applicationDbContext;
         }
 
+        public async Task<CircleInvitation?> CheckExisting(User to, Guid circleId)
+        {
+            return await _applicationDbContext.CircleInvitations
+                .Where(ci => ci.To.Id == to.Id && ci.Circle.Id == circleId)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<CircleInvitation> Create(User from, User to, Circle circle)
         {
             if (from != null && to != null && circle != null)
@@ -40,19 +47,23 @@ namespace NextGameAPI.Data.Repositories
             }
         }
 
-        public async Task<CircleInvitation> GetById(int circleInvitationId)
+        public async Task<CircleInvitation?> GetById(int circleInvitationId)
         {
-            var circleInvitation = await _applicationDbContext.CircleInvitations
+            return await _applicationDbContext.CircleInvitations
+                .Include(ci => ci.From)
                 .Include(ci => ci.To)
                 .Include(ci => ci.Circle)
                 .FirstOrDefaultAsync(ci => ci.Id == circleInvitationId);
 
-            if (circleInvitation != null)
-            {
-                return circleInvitation;
-            }
 
-            return null;
+        }
+        public async Task<CircleInvitation?> GetByCircleIdAndUserIdAsync(Guid circleId, string userId)
+        {
+            return await _applicationDbContext.CircleInvitations
+                .Include(ci => ci.From)
+                .Include(ci => ci.To)
+                .Include(ci => ci.Circle)
+                .FirstOrDefaultAsync(ci => ci.To.Id == userId && ci.Circle.Id == circleId);
         }
     }
 }

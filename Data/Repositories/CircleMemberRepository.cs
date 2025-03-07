@@ -71,7 +71,7 @@ namespace NextGameAPI.Data.Repositories
             return await _applicationDbContext.CircleMembers
                 .Include(cm => cm.Circle)
                 .Include(cm => cm.User)
-                .FirstOrDefaultAsync(cm => cm.User.Id == userId && cm.Circle.Id == circleId);
+                .FirstOrDefaultAsync(cm => cm.User.Id == userId && cm.Circle.Id == circleId && cm.IsActive);
         }
 
         public async Task UpdateCircleMemberAsync(CircleMember circleMember)
