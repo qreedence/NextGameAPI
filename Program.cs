@@ -140,6 +140,7 @@ namespace NextGameAPI
 
             //DTO Converter Services
             builder.Services.AddTransient<UserConverter>();
+            builder.Services.AddTransient<CircleConverter>();
 
             var app = builder.Build();
 

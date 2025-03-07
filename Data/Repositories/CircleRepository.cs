@@ -39,7 +39,13 @@ namespace NextGameAPI.Data.Repositories
         {
             if (id != Guid.Empty)
             {
-                var circle = await _applicationDbContext.Circles
+                var circle = _applicationDbContext.Circles.Local.FirstOrDefault(c => c.Id == id);
+                if (circle != null)
+                {
+                    return circle;
+                }
+
+                circle = await _applicationDbContext.Circles
                     .Include(c => c.CreatedBy)
                         .ThenInclude(cb => cb.Settings)
                     .Include(c => c.CircleMembers.Where(cm => cm.IsActive))
@@ -67,7 +73,7 @@ namespace NextGameAPI.Data.Repositories
                         .ThenInclude(cm => cm.User)
                     .ThenInclude(cm => cm.Settings)
                     .Where(c => c.CircleMembers
-                        .Any(cm => cm.User.Id == userId))
+                        .Any(cm => cm.User.Id == userId && cm.IsActive))
                     .ToListAsync();
                 if (circles != null && circles.Count > 0)
                 {

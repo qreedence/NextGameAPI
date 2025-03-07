@@ -6,5 +6,6 @@ namespace NextGameAPI.Data.Interfaces
     {
         Task<User?> FindByUsernameAsync(string username);
         Task<List<User>> SearchUsersAsync(string username);
+        Task<List<User>> GetEligibleFriendsForCircleAsync(List<string> friendIds, List<string> existingMemberIds, string usernameFilter);
     }
 }

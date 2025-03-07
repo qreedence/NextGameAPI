@@ -16,8 +16,18 @@ namespace NextGameAPI.Services.Circles
         private readonly NotificationService _notificationService;
         private readonly TransactionService _transactionService;
         private readonly UserConverter _userConverter;
+        private readonly CircleConverter _circleConverter;
+        private readonly IUser _userRepository;
         
-        public CircleService(ICircle circleRepository, ICircleMember circleMemberRepository, ICircleInvitation circleInvitationRepository, NotificationService notificationService, TransactionService transactionService, UserConverter userConverter)
+        public CircleService(
+            ICircle circleRepository, 
+            ICircleMember circleMemberRepository, 
+            ICircleInvitation circleInvitationRepository, 
+            NotificationService notificationService, 
+            TransactionService transactionService, 
+            UserConverter userConverter, 
+            CircleConverter circleConverter, 
+            IUser userRepository)
         {
             _circleRepository = circleRepository;
             _circleMemberRepository = circleMemberRepository;
@@ -25,6 +35,8 @@ namespace NextGameAPI.Services.Circles
             _transactionService = transactionService;
             _notificationService = notificationService;
             _userConverter = userConverter;
+            _circleConverter = circleConverter;
+            _userRepository = userRepository;
         }
 
         public async Task CreateCircle(User user, string name)
@@ -45,18 +57,66 @@ namespace NextGameAPI.Services.Circles
             }
         }
 
+        public async Task<List<UserToInviteToCircleDTO>> FindFriendsToInviteToCircle(List<string> friendIds, List<string> existingMemberIds, string userNameFilter, Guid circleId)
+        {
+            var friends = await _userRepository.GetEligibleFriendsForCircleAsync(friendIds, existingMemberIds, userNameFilter);
+            if (friends == null ||  friends.Count == 0)
+            {
+                return new List<UserToInviteToCircleDTO>();
+            }
+            return await _userConverter.ConvertUsersToUsersToInviteToCircleDTOs(friends, circleId);
+        }
+
         public async Task InviteUserToCircle(User from, User to, Guid circleId)
         {
             var circle = await _circleRepository.GetByIdAsync(circleId);
             if (circle != null)
             {
-                await _transactionService.ExecuteInTransactionAsync(async () =>
+                var invitation = await _circleInvitationRepository.CheckExisting(to, circleId);
+                if (invitation == null)
                 {
-                    var circleInvitation = await _circleInvitationRepository.Create(from, to, circle);
-                    var notification = await _notificationService.CreateCircleInvitationNotificationAsync(circleInvitation);
-                    await _notificationService.SendNotificationAsync(to, notification);
-                });
+                    await _transactionService.ExecuteInTransactionAsync(async () =>
+                    {
+                        var circleInvitation = await _circleInvitationRepository.Create(from, to, circle);
+                        var notification = await _notificationService.CreateCircleInvitationNotificationAsync(circleInvitation);
+                        await _notificationService.SendNotificationAsync(to, notification);
+                    });
+                }
             }
+        }
+
+        public async Task<CircleInvitationDTO?> GetCircleInvitationDTOAsync(int id)
+        {
+            var circleInvitation = await _circleInvitationRepository.GetById(id);
+            if (circleInvitation != null && circleInvitation.From != null)
+            {
+                var circleInvitationDTO = new CircleInvitationDTO
+                {
+                    Id = circleInvitation.Id,
+                    From = _userConverter.ConvertUserToUserDTO(circleInvitation.From) ?? new UserDTO { Username = "Unknown user" },
+                    Circle = _circleConverter.ConvertCircleToCircleDTO(circleInvitation.Circle),
+                    SentAt = circleInvitation.SentAt,
+                };
+                return circleInvitationDTO;
+            }
+            return null;
+        }
+
+        public async Task<CircleInvitationDTO?> GetCircleInvitationByCircleIdAndUserIdAsync(Guid circleId, string userId)
+        {
+            var circleInvitation = await _circleInvitationRepository.GetByCircleIdAndUserIdAsync(circleId, userId);
+            if (circleInvitation != null)
+            {
+                var circleInvitationDTO = new CircleInvitationDTO
+                {
+                    Id = circleInvitation.Id,
+                    From = _userConverter.ConvertUserToUserDTO(circleInvitation.From) ?? new UserDTO { Username="Unknown user"},
+                    Circle = _circleConverter.ConvertCircleToCircleDTO(circleInvitation.Circle),
+                    SentAt = circleInvitation.SentAt,
+                };
+                return circleInvitationDTO;
+            }
+            return null;
         }
 
         public async Task CircleInvitationResponse(User user, int circleInvitationId, bool response)
@@ -113,12 +173,16 @@ namespace NextGameAPI.Services.Circles
             return new List<CircleDTO>();
         }
 
-        public async Task LeaveCircleAsync(User user, Guid circleId)
+        public async Task<(bool, string)> LeaveCircleAsync(User user, Guid circleId)
         {
             var circle = await _circleRepository.GetByIdAsync(circleId);
             if (circle != null)
             {
                 var circleMember = await _circleMemberRepository.GetByCircleIdAndUserIdAsync(circleId, user.Id);
+                if (circleMember != null && circleMember.Role == Constants.CircleMemberRole.Owner)
+                {
+                    return (false, "Unable to leave circle. Give ownership of the circle to someone else or delete the circle.");
+                }
                 await _transactionService.ExecuteInTransactionAsync(async () =>
                 {
                     if (circleMember != null)
@@ -127,8 +191,11 @@ namespace NextGameAPI.Services.Circles
                         circleMember.LeftAt = DateTime.UtcNow;
                         await _circleMemberRepository.UpdateCircleMemberAsync(circleMember);
                     }
+                    
                 });
+                return (true, "");
             }
+            return (false, "Can't find circle.");
         }
     }
 }

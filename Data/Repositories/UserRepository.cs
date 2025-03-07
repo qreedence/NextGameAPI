@@ -35,5 +35,20 @@ namespace NextGameAPI.Data.Repositories
 
             return users;
         }
+
+        public async Task<List<User>> GetEligibleFriendsForCircleAsync(
+            List<string> friendIds,
+            List<string> existingMemberIds,
+            string usernameFilter)
+        {
+            usernameFilter = usernameFilter?.Trim() ?? "";
+
+            return await _applicationDbContext.Users
+                .Where(u =>
+                    friendIds.Contains(u.Id) &&
+                    !existingMemberIds.Contains(u.Id) &&
+                    (string.IsNullOrEmpty(usernameFilter) || u.UserName.StartsWith(usernameFilter)))
+                .ToListAsync();
+        }
     }
 }

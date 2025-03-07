@@ -6,6 +6,12 @@ namespace NextGameAPI.Services.DTOConverters
 {
     public class UserConverter
     {
+        private readonly ICircleInvitation _circleInvitationRepository;
+
+        public UserConverter(ICircleInvitation circleInvitationRepository)
+        {
+            _circleInvitationRepository = circleInvitationRepository;
+        }
         public UserDTO? ConvertUserToUserDTO(User user)
         {
             if (user != null)
@@ -34,6 +40,26 @@ namespace NextGameAPI.Services.DTOConverters
                 return userDTOs;
             }
             return new List<UserDTO>();
+        }
+
+        public async Task<List<UserToInviteToCircleDTO>> ConvertUsersToUsersToInviteToCircleDTOs(List<User> users, Guid circleId)
+        {
+            if (users != null && users.Count > 0)
+            {
+                var userDTOs = new List<UserToInviteToCircleDTO>();
+                foreach (var user in users)
+                {
+                    userDTOs.Add(new UserToInviteToCircleDTO
+                    {
+                        Username = user.UserName!,
+                        AccountIsPublic = user.Settings.AccountIsPublic,
+                        Avatar = user.Settings.Avatar,
+                        InviteSent = await _circleInvitationRepository.CheckExisting(user, circleId) != null
+                    });
+                }
+                return userDTOs;
+            }
+            return new List<UserToInviteToCircleDTO>();
         }
     }
 }
