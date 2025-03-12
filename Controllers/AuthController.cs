@@ -56,7 +56,7 @@ namespace NextGameAPI.Controllers
 
             if (user == null)
             {
-                return Unauthorized($"Login failed.");
+                return Unauthorized($"Invalid username/email or password.");
             }
 
             var result = await _signInManager.PasswordSignInAsync(user, loginDTO.Password, loginDTO.RememberMe, true);
@@ -64,7 +64,7 @@ namespace NextGameAPI.Controllers
             {
                 return Ok();
             }
-            return Unauthorized("Login failed.");
+            return Unauthorized($"Invalid username/email or password.");
         }
 
         [HttpPost("external-login")]

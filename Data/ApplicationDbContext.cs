@@ -29,6 +29,9 @@ namespace NextGameAPI.Data
         //Notifications
         public DbSet<Notification> Notifications { get; set; }
 
+        //IGDB
+        public DbSet<TwitchAccessToken> TwitchAccessTokens { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);

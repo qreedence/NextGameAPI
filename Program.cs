@@ -10,6 +10,7 @@ using NextGameAPI.Hubs;
 using NextGameAPI.Services.Circles;
 using NextGameAPI.Services.DTOConverters;
 using NextGameAPI.Services.Email;
+using NextGameAPI.Services.IGDB;
 using NextGameAPI.Services.Notifications;
 using NextGameAPI.Services.Transactions;
 using NextGameAPI.Services.UploadThing;
@@ -35,6 +36,8 @@ namespace NextGameAPI
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                             options.UseSqlServer(Environment.GetEnvironmentVariable("connection-string")));
 
+
+            //Model Services
             builder.Services.AddTransient<IExternalLoginToken, ExternalLoginTokenRepository>();
             builder.Services.AddTransient<IUserSettings, UserSettingsRepository>();
             builder.Services.AddTransient<IPasswordResetToken, PasswordResetTokenRepository>();
@@ -45,6 +48,19 @@ namespace NextGameAPI
             builder.Services.AddTransient<ICircle, CircleRepository>();
             builder.Services.AddTransient<ICircleMember, CircleMemberRepository>();
             builder.Services.AddTransient<ICircleInvitation, CircleInvitationRepository>();
+            builder.Services.AddTransient<ITwitchAccessToken, TwitchAccessTokenRepository>();
+
+            //HTTP Clients
+            builder.Services.AddHttpClient("IGDBAuthClient", client =>
+            {
+                client.BaseAddress = new Uri("https://id.twitch.tv/oauth2/");
+            });
+
+            builder.Services.AddHttpClient("IGDBClient", client =>
+            {
+                client.BaseAddress = new Uri("https://api.igdb.com/v4/");
+                client.DefaultRequestHeaders.Add("Client-ID", Environment.GetEnvironmentVariable("igdb-client-id"));
+            });
 
             //SignalR
             builder.Services.AddSignalR();
@@ -137,6 +153,9 @@ namespace NextGameAPI
 
             //Circle Service
             builder.Services.AddTransient<CircleService>();
+
+            //IGDB
+            builder.Services.AddTransient<TwitchAccessTokenService>();
 
             //DTO Converter Services
             builder.Services.AddTransient<UserConverter>();
