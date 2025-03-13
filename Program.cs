@@ -156,6 +156,7 @@ namespace NextGameAPI
 
             //IGDB
             builder.Services.AddTransient<TwitchAccessTokenService>();
+            builder.Services.AddTransient<GameService>();
 
             //DTO Converter Services
             builder.Services.AddTransient<UserConverter>();
