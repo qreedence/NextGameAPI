@@ -1,6 +1,4 @@
-﻿using Azure.Core;
-using NextGameAPI.DTOs.Games;
-using System.Net.Http;
+﻿using NextGameAPI.DTOs.Games;
 using System.Text;
 using System.Text.Json;
 
@@ -33,10 +31,10 @@ namespace NextGameAPI.Services.IGDB
                 fields id, name, cover, first_release_date;
                 limit 10;
             ";
-            return await GetGameList(queryBody);
+            return await GetGameList("games", queryBody);
         }
 
-        private async Task<List<GameSearchResultDTO>> GetGameList(string queryBody)
+        private async Task<List<GameSearchResultDTO>> GetGameList(string endpoint, string queryBody)
         {
             await EnsureAccessToken();
             var content = new StringContent(queryBody, Encoding.UTF8, "text/plain");
