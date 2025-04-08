@@ -34,6 +34,17 @@ namespace NextGameAPI.Services.IGDB
             return await GetGameList("games", queryBody);
         }
 
+        public async Task<List<GameSearchResultDTO>> GetNewGamesAsync()
+        {
+            string queryBody = $@"
+                fields id, name, cover, rating, first_release_date;
+                where rating > 75 & first_release_date < {(int)DateTimeOffset.UtcNow.ToUnixTimeSeconds()};
+                sort first_release_date desc;
+                limit 10;
+            ";
+            return await GetGameList("games", queryBody);
+        }
+
         private async Task<List<GameSearchResultDTO>> GetGameList(string endpoint, string queryBody)
         {
             await EnsureAccessToken();
