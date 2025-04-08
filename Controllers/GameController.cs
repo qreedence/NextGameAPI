@@ -33,5 +33,17 @@ namespace NextGameAPI.Controllers
 
             return Ok(games);
         }
+
+        [HttpGet("new")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof (List<GameSearchResultDTO>))]
+        public async Task<IActionResult> GetNewGamesAsync()
+        {
+            var games = await _gameService.GetNewGamesAsync();
+            if (games == null || games.Count == 0)
+            {
+                return Ok(new List<GameSearchResultDTO>());
+            }
+            return Ok(games);
+        }
     }
 }
