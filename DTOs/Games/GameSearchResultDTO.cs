@@ -15,5 +15,10 @@ namespace NextGameAPI.DTOs.Games
         [JsonPropertyName("first_release_date")]
         public long? FirstReleaseDateUnix { get; set; }
         public DateTime FirstReleaseDate { get; set; }
+        [JsonPropertyName("aggregated_rating")]
+        public double AggregatedRating { get; set; }
+
+        [JsonPropertyName("aggregated_rating_count")]
+        public int AggregatedRatingCount { get; set; }
     }
 }

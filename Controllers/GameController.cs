@@ -64,5 +64,18 @@ namespace NextGameAPI.Controllers
             }
             return Ok(game);
         }
+
+        [HttpGet("top")]
+        [EndpointName("HighestRated")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<GameSearchResultDTO>))]
+        public async Task<IActionResult> GetHighestRatedGamesAsync(int year)
+        {
+            var games = await _gameService.GetHighestRatedGamesOfYear(year);
+            if (games == null || games.Count == 0)
+            {
+                return Ok(new List<GameSearchResultDTO>());
+            }
+            return Ok(games);
+        }
     }
 }
