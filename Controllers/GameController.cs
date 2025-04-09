@@ -17,6 +17,8 @@ namespace NextGameAPI.Controllers
         }
 
         [HttpGet("search/{searchTerm}")]
+        [EndpointName("Search")]
+        [EndpointDescription("Search for a game by name.")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof (List<GameSearchResultDTO>))]
         public async Task<IActionResult> SearchGamesAsync([FromRoute]string searchTerm)
         {
@@ -35,6 +37,8 @@ namespace NextGameAPI.Controllers
         }
 
         [HttpGet("new")]
+        [EndpointName("New")]
+        [EndpointDescription("Get new games.")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof (List<GameSearchResultDTO>))]
         public async Task<IActionResult> GetNewGamesAsync()
         {
@@ -44,6 +48,21 @@ namespace NextGameAPI.Controllers
                 return Ok(new List<GameSearchResultDTO>());
             }
             return Ok(games);
+        }
+
+        [HttpGet]
+        [EndpointName("GetById")]
+        [EndpointDescription("Get a specific game by ID.")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GameDTO))]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetGameByIdAsync(string gameId)
+        {
+            var game = await _gameService.GetGameAsync(gameId);
+            if (game == null)
+            {
+                return NotFound();
+            }
+            return Ok(game);
         }
     }
 }
