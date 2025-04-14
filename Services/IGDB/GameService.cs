@@ -38,6 +38,22 @@ namespace NextGameAPI.Services.IGDB
             return await GetGameList("games", queryBody);
         }
 
+        public async Task<List<GameSearchResultDTO>> GetAllNewGamesAsync(int page = 1, int pageSize = 50)
+        {
+            pageSize = Math.Clamp(pageSize, 1, 50);
+
+            int offset = (page - 1) * pageSize;
+
+            string queryBody = $@"
+                fields id, name, cover, first_release_date;
+                where first_release_date < {(int)DateTimeOffset.UtcNow.ToUnixTimeSeconds()};
+                sort first_release_date desc;
+                limit {pageSize};
+                offset {offset};
+            ";
+            return await GetGameList("games", queryBody);
+        }
+
         public async Task<List<GameSearchResultDTO>> GetHighestRatedGamesOfYear(int year)
         {
             DateTimeOffset startOfYear = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -274,8 +290,11 @@ namespace NextGameAPI.Services.IGDB
             var screenshotList = new List<string>();
             foreach (var screenshot in screenshots)
             {
-                string imageUrl = $"https://{screenshot.Url.Replace("thumb", "1080p").Substring(2)}";
-                screenshotList.Add(imageUrl);
+                if (screenshot.Url.Length > 2)
+                {
+                    string imageUrl = $"https://{screenshot.Url.Replace("thumb", "1080p").Substring(2)}";
+                    screenshotList.Add(imageUrl);
+                }
             }
             return screenshotList;
         }

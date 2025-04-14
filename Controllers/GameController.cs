@@ -50,6 +50,20 @@ namespace NextGameAPI.Controllers
             return Ok(games);
         }
 
+        [HttpGet("new/all")]
+        [EndpointName("GetAllNew")]
+        [EndpointDescription("Get all new games, paginated")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<GameSearchResultDTO>))]
+        public async Task<IActionResult> GetAllNewGamesAsync(int page)
+        {
+            var games = await _gameService.GetAllNewGamesAsync(page);
+            if (games == null || games.Count == 0)
+            {
+                return Ok(new List<GameSearchResultDTO>());
+            }
+            return Ok(games);
+        }
+
         [HttpGet]
         [EndpointName("GetById")]
         [EndpointDescription("Get a specific game by ID.")]
