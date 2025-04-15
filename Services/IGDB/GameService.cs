@@ -71,6 +71,27 @@ namespace NextGameAPI.Services.IGDB
             return await GetGameList("games", queryBody);
         }
 
+        public async Task<List<GameSearchResultDTO>> GetAllHighestRatedGamesOfYear(int year, int page = 1, int pageSize = 50)
+        {
+            DateTimeOffset startOfYear = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            long startUnixTime = startOfYear.ToUnixTimeSeconds();
+
+            DateTimeOffset endOfYear = new DateTimeOffset(year + 1, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            long endUnixTime = endOfYear.ToUnixTimeSeconds();
+            pageSize = Math.Clamp(pageSize, 1, 50);
+
+            int offset = (page - 1) * pageSize;
+
+            string queryBody = $@"
+                fields id, name, cover, aggregated_rating, first_release_date, aggregated_rating_count;
+                where first_release_date >= {startUnixTime} & first_release_date < {endUnixTime} & aggregated_rating_count > 1;
+                sort aggregated_rating desc;
+                limit {pageSize};
+                offset {offset};
+            ";
+            return await GetGameList("games", queryBody);
+        }
+
         public async Task<GameDTO?> GetGameAsync(string gameId)
         {
             string queryBody = $@"
@@ -161,6 +182,7 @@ namespace NextGameAPI.Services.IGDB
             string queryBody = $@"
                 fields id, url;
                 where id = ({idList});
+                limit {ids.Count};
             ";
 
             var content = new StringContent(queryBody, Encoding.UTF8, "text/plain");
