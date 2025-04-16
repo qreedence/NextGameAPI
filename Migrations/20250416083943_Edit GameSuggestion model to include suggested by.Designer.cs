@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NextGameAPI.Data;
 
@@ -11,9 +12,11 @@ using NextGameAPI.Data;
 namespace NextGameAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250416083943_Edit GameSuggestion model to include suggested by")]
+    partial class EditGameSuggestionmodeltoincludesuggestedby
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -348,16 +351,8 @@ namespace NextGameAPI.Migrations
                     b.Property<Guid>("CircleId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("GameCoverUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("GameId")
                         .HasColumnType("int");
-
-                    b.Property<string>("GameName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SuggestedBy")
                         .IsRequired()
@@ -385,13 +380,12 @@ namespace NextGameAPI.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("GameSuggestionId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("GameVotes");
                 });
@@ -741,12 +735,6 @@ namespace NextGameAPI.Migrations
                     b.HasOne("NextGameAPI.Data.Models.GameSuggestion", null)
                         .WithMany("Votes")
                         .HasForeignKey("GameSuggestionId");
-
-                    b.HasOne("NextGameAPI.Data.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("NextGameAPI.Data.Models.Notification", b =>

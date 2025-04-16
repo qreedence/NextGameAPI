@@ -7,6 +7,6 @@ namespace NextGameAPI.Data.Interfaces
         Task AddAsync (GameSuggestion gameSuggestion);
         Task<GameSuggestion?> GetByIdAsync(int id);
         Task<GameSuggestion?> GetByGameIdAsync(Guid circleId, int gameId);
-        Task<List<GameSuggestion>> GetAllByCircleId(Guid circleId);
+        Task UpdateAsync (GameSuggestion gameSuggestion);
     }
 }

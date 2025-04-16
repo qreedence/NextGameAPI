@@ -6,9 +6,11 @@ namespace NextGameAPI.Services.DTOConverters
     public class CircleConverter
     {
         private readonly UserConverter _userConverter;
-        public CircleConverter (UserConverter userConverter)
+        private readonly GameSuggestionConverter _gameSuggestionConverter;
+        public CircleConverter (UserConverter userConverter, GameSuggestionConverter gameSuggestionConverter)
         {
             _userConverter = userConverter;
+            _gameSuggestionConverter = gameSuggestionConverter;
         }
         public CircleDTO? ConvertCircleToCircleDTO(Circle circle)
         {
@@ -19,8 +21,8 @@ namespace NextGameAPI.Services.DTOConverters
                     Id = circle.Id,
                     Name = circle.Name,
                     CreatedAt = circle.CreatedAt,
-                    CreatedBy = _userConverter.ConvertUserToUserDTO(circle.CreatedBy) ?? new UserDTO { Username = "Unknown user" },
-                    SuggestionQueue = circle.SuggestionQueue,
+                    CreatedBy = _userConverter.ConvertUserToUserDTO(circle.CreatedBy) ?? new UserDTO {UserId="Unknown user", Username = "Unknown user" },
+                    SuggestionQueue = _gameSuggestionConverter.ConvertGameSuggestionsToDTOs(circle.SuggestionQueue)
                 };
                 return circleDTO;
             }

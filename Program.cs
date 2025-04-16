@@ -163,6 +163,7 @@ namespace NextGameAPI
             //DTO Converter Services
             builder.Services.AddTransient<UserConverter>();
             builder.Services.AddTransient<CircleConverter>();
+            builder.Services.AddTransient<GameSuggestionConverter>();
 
             var app = builder.Build();
 

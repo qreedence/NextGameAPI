@@ -1,11 +1,11 @@
 ﻿using NextGameAPI.Constants;
 
-namespace NextGameAPI.Data.Models
+namespace NextGameAPI.DTOs
 {
-    public class GameVote
+    public class GameVoteDTO
     {
         public int Id { get; set; }
-        public User User { get; set; }
+        public required UserDTO User { get; set; }
         public GameVoteStatus Status { get; set; }
     }
 }

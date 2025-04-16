@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using NextGameAPI.Constants;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
@@ -83,21 +84,42 @@ namespace NextGameAPI.Controllers
         [Authorize]
         [EndpointName("SuggestGame")]
         [EndpointDescription("Suggest a game to a circle.")]
-        public async Task<IActionResult> SuggestGameAsync(Guid circleId, int gameId)
+        public async Task<IActionResult> SuggestGameAsync(Guid circleId, int gameId, string gameName, string gameCoverUrl)
         {
-            if (circleId != Guid.Empty && gameId > 0)
+            if (circleId != Guid.Empty && gameId > 0 && !string.IsNullOrEmpty(User?.Identity?.Name))
             {
-                await _circleService.SuggestGameToCircle(circleId, gameId);
+                await _circleService.SuggestGameToCircle(circleId, gameId, gameName, gameCoverUrl, User?.Identity?.Name);
                 return Ok();
             }
             return BadRequest();
+        }
+
+        [HttpPost("vote")]
+        [Authorize]
+        [EndpointName("VoteForGame")]
+        [EndpointDescription("Vote for a game in the suggestion queue.")]
+        public async Task<IActionResult> VoteForGameAsync(int gameSuggestionId, GameVoteStatus gameVoteStatus)
+        {
+            if (string.IsNullOrEmpty(User?.Identity?.Name))
+            {
+                return BadRequest();
+            }
+
+            var user = await _userManager.FindByNameAsync(User?.Identity?.Name);
+            if (user == null)
+            {
+                return BadRequest();
+            }
+
+            await _circleService.VoteOnSuggestedGame(gameSuggestionId, gameVoteStatus, user);
+            return Ok();
         }
 
         [HttpGet("suggested")]
         [Authorize]
         [EndpointName("GetSuggestedGames")]
         [EndpointDescription("Get all games in the suggestion queue for a circle.")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<GameSuggestion>))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<GameSuggestionDTO>))]
         public async Task<IActionResult> GetSuggestedGamesAsync(Guid circleId)
         {
             if (circleId != Guid.Empty)
@@ -107,9 +129,9 @@ namespace NextGameAPI.Controllers
                 {
                     return Ok(gameSuggestions);
                 }
-                return NotFound();
+                return NoContent();
             }
-            return BadRequest();
+            return NotFound();
         }
 
         [HttpPost("create")]

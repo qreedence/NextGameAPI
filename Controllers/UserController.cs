@@ -45,6 +45,7 @@ namespace NextGameAPI.Controllers
             {
                 var userDTO = new UserDTO
                 {
+                    UserId = user.Id,
                     Username = user.UserName!,
                     Avatar = user.Settings.Avatar,
                     AccountIsPublic = user.Settings.AccountIsPublic
@@ -72,6 +73,7 @@ namespace NextGameAPI.Controllers
             {
                 var userDTOs = users.Where(u => u.UserName != User?.Identity?.Name).Select(user => new UserDTO
                 {
+                    UserId = user.Id,
                     Username = user.UserName!,
                     Avatar = user.Settings.Avatar,
                     AccountIsPublic = user.Settings.AccountIsPublic
@@ -108,6 +110,7 @@ namespace NextGameAPI.Controllers
             }
             var friendDTOs = friends.Select(friend => new UserDTO
             {
+                UserId = user.Id,
                 Username = friend.UserName!,
                 Avatar = friend.Settings.Avatar,
                 AccountIsPublic = user.Settings.AccountIsPublic
