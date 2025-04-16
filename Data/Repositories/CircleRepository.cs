@@ -51,6 +51,8 @@ namespace NextGameAPI.Data.Repositories
                     .Include(c => c.CircleMembers.Where(cm => cm.IsActive))
                         .ThenInclude(cm => cm.User)
                             .ThenInclude(cm => cm.Settings)
+                    .Include(c => c.SuggestionQueue)
+                        .ThenInclude(sq => sq.Votes)
                     .Where(c => c.CircleMembers
                         .Any(cm => cm.IsActive))
                     .FirstOrDefaultAsync(x => x.Id == id);
@@ -69,6 +71,8 @@ namespace NextGameAPI.Data.Repositories
             {
                 var circles = await _applicationDbContext.Circles
                     .Include(c => c.CreatedBy)
+                    .Include(c => c.SuggestionQueue)
+                        .ThenInclude(sq => sq.Votes)
                     .Include(c => c.CircleMembers.Where(cm => cm.IsActive))
                         .ThenInclude(cm => cm.User)
                     .ThenInclude(cm => cm.Settings)
@@ -87,8 +91,15 @@ namespace NextGameAPI.Data.Repositories
         {
             if (circle != null)
             {
+                try
+                {
                 _applicationDbContext.Circles.Update(circle);
                 await _applicationDbContext.SaveChangesAsync();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
             }
         }
     }

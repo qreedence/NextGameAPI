@@ -1,4 +1,6 @@
-﻿namespace NextGameAPI.DTOs
+﻿using NextGameAPI.Data.Models;
+
+namespace NextGameAPI.DTOs
 {
     public class CircleDTO
     {
@@ -7,5 +9,6 @@
         public required UserDTO CreatedBy { get; set; }
         public required DateTime CreatedAt { get; set; }
         public List<UserDTO> ActiveMembers { get; set; } = [];
+        public List<GameSuggestion> SuggestionQueue { get; set; } = [];
     }
 }

@@ -15,6 +15,8 @@ namespace NextGameAPI.Data
         public DbSet<Circle> Circles { get; set; }
         public DbSet<CircleMember> CircleMembers { get; set; }
         public DbSet<CircleInvitation> CircleInvitations { get; set; }
+        public DbSet<GameSuggestion> GameSuggestions { get; set; }
+        public DbSet<GameVote> GameVotes { get; set; }
 
         //Users & Auth
         public DbSet<ExternalLoginToken> ExternalLoginTokens { get; set; }

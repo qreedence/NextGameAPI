@@ -7,7 +7,6 @@
         public required User CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public List<CircleMember> CircleMembers { get; set; } = [];
-
-        //TODO: Implement game related stuff
+        public List<GameSuggestion> SuggestionQueue { get; set; } = [];
     }
 }

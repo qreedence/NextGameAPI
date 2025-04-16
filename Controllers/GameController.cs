@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient.DataClassification;
 using NextGameAPI.DTOs.Games;
 using NextGameAPI.Services.IGDB;
 
@@ -50,6 +51,20 @@ namespace NextGameAPI.Controllers
             return Ok(games);
         }
 
+        [HttpGet("new/all")]
+        [EndpointName("GetAllNew")]
+        [EndpointDescription("Get all new games, paginated")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<GameSearchResultDTO>))]
+        public async Task<IActionResult> GetAllNewGamesAsync(int page)
+        {
+            var games = await _gameService.GetAllNewGamesAsync(page);
+            if (games == null || games.Count == 0)
+            {
+                return Ok(new List<GameSearchResultDTO>());
+            }
+            return Ok(games);
+        }
+
         [HttpGet]
         [EndpointName("GetById")]
         [EndpointDescription("Get a specific game by ID.")]
@@ -71,6 +86,20 @@ namespace NextGameAPI.Controllers
         public async Task<IActionResult> GetHighestRatedGamesAsync(int year)
         {
             var games = await _gameService.GetHighestRatedGamesOfYear(year);
+            if (games == null || games.Count == 0)
+            {
+                return Ok(new List<GameSearchResultDTO>());
+            }
+            return Ok(games);
+        }
+
+        [HttpGet("top/all")]
+        [EndpointName("GetAllHighestRated")]
+        [EndpointDescription("Get all new highest rated games for a given year, paginated")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<GameSearchResultDTO>))]
+        public async Task<IActionResult> GetAllHighestRatedGamesAsync(int year, int page)
+        {
+            var games = await _gameService.GetAllHighestRatedGamesOfYear(year, page, 50);
             if (games == null || games.Count == 0)
             {
                 return Ok(new List<GameSearchResultDTO>());
