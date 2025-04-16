@@ -31,7 +31,7 @@ namespace NextGameAPI.Data.Repositories
                 return null;
             }
 
-            return await _applicationDbContext.GameSuggestions.FirstOrDefaultAsync(gs => gs.Id == id);
+            return await _applicationDbContext.GameSuggestions.Include(gs => gs.Votes).FirstOrDefaultAsync(gs => gs.Id == id);
         }
 
         public async Task<GameSuggestion?> GetByGameIdAsync(Guid circleId, int gameId)
@@ -41,17 +41,28 @@ namespace NextGameAPI.Data.Repositories
                 return null;
             }
 
-            return await _applicationDbContext.GameSuggestions.FirstOrDefaultAsync(gs => gs.CircleId == circleId && gs.GameId == gameId);
+            return await _applicationDbContext.GameSuggestions.Include(gs => gs.Votes).FirstOrDefaultAsync(gs => gs.CircleId == circleId && gs.GameId == gameId);
         }
 
         public async Task<List<GameSuggestion>> GetAllByCircleId(Guid circleId)
         {
-            var suggestions = await _applicationDbContext.GameSuggestions.Where(gs => gs.CircleId == circleId).ToListAsync();
+            var suggestions = await _applicationDbContext.GameSuggestions.Include(gs => gs.Votes).Where(gs => gs.CircleId == circleId).ToListAsync();
             if (suggestions == null || suggestions.Count == 0)
             {
                 return new List<GameSuggestion>();
             }
             return suggestions;
+        }
+
+        public async Task UpdateAsync(GameSuggestion gameSuggestion)
+        {
+            if (gameSuggestion == null)
+            {
+                return;
+            }
+
+            _applicationDbContext.GameSuggestions.Update(gameSuggestion);
+            await _applicationDbContext.SaveChangesAsync();
         }
     }
 }

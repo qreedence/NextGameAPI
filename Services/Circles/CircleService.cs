@@ -1,4 +1,5 @@
-﻿using NextGameAPI.Data;
+﻿using NextGameAPI.Constants;
+using NextGameAPI.Data;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
@@ -14,6 +15,7 @@ namespace NextGameAPI.Services.Circles
         private readonly ICircleMember _circleMemberRepository;
         private readonly ICircleInvitation _circleInvitationRepository;
         private readonly IGameSuggestion _gameSuggestionRepository;
+        private readonly IGameVote _gameVoteRepository;
         private readonly NotificationService _notificationService;
         private readonly TransactionService _transactionService;
         private readonly UserConverter _userConverter;
@@ -25,6 +27,7 @@ namespace NextGameAPI.Services.Circles
             ICircleMember circleMemberRepository, 
             ICircleInvitation circleInvitationRepository,
             IGameSuggestion gameSuggestionRepository,
+            IGameVote gameVoteRepository,
             NotificationService notificationService, 
             TransactionService transactionService, 
             UserConverter userConverter, 
@@ -35,6 +38,7 @@ namespace NextGameAPI.Services.Circles
             _circleMemberRepository = circleMemberRepository;
             _circleInvitationRepository = circleInvitationRepository;
             _gameSuggestionRepository = gameSuggestionRepository;
+            _gameVoteRepository = gameVoteRepository;
             _transactionService = transactionService;
             _notificationService = notificationService;
             _userConverter = userConverter;
@@ -86,6 +90,35 @@ namespace NextGameAPI.Services.Circles
             circle.SuggestionQueue.Add(gameSuggestion);
             await _circleRepository.UpdateCircleAsync(circle);
             
+        }
+
+        public async Task VoteOnSuggestedGame(int gameSuggestionId, GameVoteStatus gameVoteStatus, string userId)
+        {
+            if (gameSuggestionId <= 0 || string.IsNullOrEmpty(userId))
+            {
+                return;
+            }
+
+            var gameSuggestion = await _gameSuggestionRepository.GetByIdAsync(gameSuggestionId);
+            if (gameSuggestion == null)
+            {
+                return;
+            }
+
+            if (gameSuggestion.Votes.FirstOrDefault(v => v.UserId == userId) != null)
+            {
+                return;
+            }
+
+            var gameVote = new GameVote
+            {
+                Status = gameVoteStatus,
+                UserId = userId,
+            };
+
+            await _gameVoteRepository.AddAsync(gameVote);
+            gameSuggestion.Votes.Add(gameVote);
+            await _gameSuggestionRepository.UpdateAsync(gameSuggestion);
         }
 
         public async Task<List<GameSuggestion>> GetGameSuggestionsForCircleAsync(Guid circleId)

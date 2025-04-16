@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using NextGameAPI.Constants;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
@@ -91,6 +92,27 @@ namespace NextGameAPI.Controllers
                 return Ok();
             }
             return BadRequest();
+        }
+
+        [HttpPost("vote")]
+        [Authorize]
+        [EndpointName("VoteForGame")]
+        [EndpointDescription("Vote for a game in the suggestion queue.")]
+        public async Task<IActionResult> VoteForGameAsync(int gameSuggestionId, GameVoteStatus gameVoteStatus)
+        {
+            if (string.IsNullOrEmpty(User?.Identity?.Name))
+            {
+                return BadRequest();
+            }
+
+            var user = await _userManager.FindByNameAsync(User?.Identity?.Name);
+            if (user == null)
+            {
+                return BadRequest();
+            }
+
+            await _circleService.VoteOnSuggestedGame(gameSuggestionId, gameVoteStatus, user.Id);
+            return Ok();
         }
 
         [HttpGet("suggested")]
