@@ -18,6 +18,7 @@ namespace NextGameAPI.Services.DTOConverters
             {
                 var userDTO = new UserDTO
                 {
+                    UserId = user.Id,
                     Username = user.UserName!,
                     AccountIsPublic = user.Settings.AccountIsPublic,
                     Avatar = user.Settings.Avatar,
@@ -33,6 +34,7 @@ namespace NextGameAPI.Services.DTOConverters
             {
                 var userDTOs = users.Select(user => new UserDTO
                 {
+                    UserId = user.Id,
                     Username = user.UserName!,
                     AccountIsPublic = user.Settings.AccountIsPublic,
                     Avatar = user.Settings.Avatar,
@@ -51,6 +53,7 @@ namespace NextGameAPI.Services.DTOConverters
                 {
                     userDTOs.Add(new UserToInviteToCircleDTO
                     {
+                        UserId = user.Id,
                         Username = user.UserName!,
                         AccountIsPublic = user.Settings.AccountIsPublic,
                         Avatar = user.Settings.Avatar,

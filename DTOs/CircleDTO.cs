@@ -9,6 +9,6 @@ namespace NextGameAPI.DTOs
         public required UserDTO CreatedBy { get; set; }
         public required DateTime CreatedAt { get; set; }
         public List<UserDTO> ActiveMembers { get; set; } = [];
-        public List<GameSuggestion> SuggestionQueue { get; set; } = [];
+        public List<GameSuggestionDTO> SuggestionQueue { get; set; } = [];
     }
 }

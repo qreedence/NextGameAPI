@@ -111,7 +111,7 @@ namespace NextGameAPI.Controllers
                 return BadRequest();
             }
 
-            await _circleService.VoteOnSuggestedGame(gameSuggestionId, gameVoteStatus, user.Id);
+            await _circleService.VoteOnSuggestedGame(gameSuggestionId, gameVoteStatus, user);
             return Ok();
         }
 
@@ -119,7 +119,7 @@ namespace NextGameAPI.Controllers
         [Authorize]
         [EndpointName("GetSuggestedGames")]
         [EndpointDescription("Get all games in the suggestion queue for a circle.")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<GameSuggestion>))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<GameSuggestionDTO>))]
         public async Task<IActionResult> GetSuggestedGamesAsync(Guid circleId)
         {
             if (circleId != Guid.Empty)
@@ -129,9 +129,9 @@ namespace NextGameAPI.Controllers
                 {
                     return Ok(gameSuggestions);
                 }
-                return NotFound();
+                return NoContent();
             }
-            return BadRequest();
+            return NotFound();
         }
 
         [HttpPost("create")]

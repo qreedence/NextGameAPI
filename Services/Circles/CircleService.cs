@@ -20,6 +20,7 @@ namespace NextGameAPI.Services.Circles
         private readonly TransactionService _transactionService;
         private readonly UserConverter _userConverter;
         private readonly CircleConverter _circleConverter;
+        private readonly GameSuggestionConverter _gameSuggestionConverter;
         private readonly IUser _userRepository;
         
         public CircleService(
@@ -32,6 +33,7 @@ namespace NextGameAPI.Services.Circles
             TransactionService transactionService, 
             UserConverter userConverter, 
             CircleConverter circleConverter, 
+            GameSuggestionConverter gameSuggestionConverter,
             IUser userRepository)
         {
             _circleRepository = circleRepository;
@@ -43,6 +45,7 @@ namespace NextGameAPI.Services.Circles
             _notificationService = notificationService;
             _userConverter = userConverter;
             _circleConverter = circleConverter;
+            _gameSuggestionConverter = gameSuggestionConverter;
             _userRepository = userRepository;
         }
 
@@ -92,9 +95,9 @@ namespace NextGameAPI.Services.Circles
             
         }
 
-        public async Task VoteOnSuggestedGame(int gameSuggestionId, GameVoteStatus gameVoteStatus, string userId)
+        public async Task VoteOnSuggestedGame(int gameSuggestionId, GameVoteStatus gameVoteStatus, User user)
         {
-            if (gameSuggestionId <= 0 || string.IsNullOrEmpty(userId))
+            if (gameSuggestionId <= 0 || user == null)
             {
                 return;
             }
@@ -105,7 +108,7 @@ namespace NextGameAPI.Services.Circles
                 return;
             }
 
-            if (gameSuggestion.Votes.FirstOrDefault(v => v.UserId == userId) != null)
+            if (gameSuggestion.Votes.FirstOrDefault(v => v.User.Id == user?.Id) != null)
             {
                 return;
             }
@@ -113,7 +116,7 @@ namespace NextGameAPI.Services.Circles
             var gameVote = new GameVote
             {
                 Status = gameVoteStatus,
-                UserId = userId,
+                User = user,
             };
 
             await _gameVoteRepository.AddAsync(gameVote);
@@ -121,14 +124,14 @@ namespace NextGameAPI.Services.Circles
             await _gameSuggestionRepository.UpdateAsync(gameSuggestion);
         }
 
-        public async Task<List<GameSuggestion>> GetGameSuggestionsForCircleAsync(Guid circleId)
+        public async Task<List<GameSuggestionDTO>> GetGameSuggestionsForCircleAsync(Guid circleId)
         {
             var circle = await _circleRepository.GetByIdAsync(circleId);
             if (circle != null)
             {
-                return circle.SuggestionQueue;
+                return _gameSuggestionConverter.ConvertGameSuggestionsToDTOs(circle.SuggestionQueue);
             }
-            return new List<GameSuggestion>();
+            return new List<GameSuggestionDTO>();
         }
 
         public async Task<List<UserToInviteToCircleDTO>> FindFriendsToInviteToCircle(List<string> friendIds, List<string> existingMemberIds, string userNameFilter, Guid circleId)
@@ -167,7 +170,7 @@ namespace NextGameAPI.Services.Circles
                 var circleInvitationDTO = new CircleInvitationDTO
                 {
                     Id = circleInvitation.Id,
-                    From = _userConverter.ConvertUserToUserDTO(circleInvitation.From) ?? new UserDTO { Username = "Unknown user" },
+                    From = _userConverter.ConvertUserToUserDTO(circleInvitation.From) ?? new UserDTO { UserId = "Unkown user", Username = "Unknown user" },
                     Circle = _circleConverter.ConvertCircleToCircleDTO(circleInvitation.Circle),
                     SentAt = circleInvitation.SentAt,
                 };
@@ -184,7 +187,7 @@ namespace NextGameAPI.Services.Circles
                 var circleInvitationDTO = new CircleInvitationDTO
                 {
                     Id = circleInvitation.Id,
-                    From = _userConverter.ConvertUserToUserDTO(circleInvitation.From) ?? new UserDTO { Username="Unknown user"},
+                    From = _userConverter.ConvertUserToUserDTO(circleInvitation.From) ?? new UserDTO { UserId="Unknown user", Username="Unknown user"},
                     Circle = _circleConverter.ConvertCircleToCircleDTO(circleInvitation.Circle),
                     SentAt = circleInvitation.SentAt,
                 };
@@ -241,7 +244,7 @@ namespace NextGameAPI.Services.Circles
                     CreatedAt = circle.CreatedAt,
                     CreatedBy = _userConverter.ConvertUserToUserDTO(circle.CreatedBy),
                     ActiveMembers = _userConverter.ConvertUsersToUserDTOs(circle.CircleMembers.Select(cm => cm.User).ToList()),
-                    SuggestionQueue = circle.SuggestionQueue
+                    SuggestionQueue = _gameSuggestionConverter.ConvertGameSuggestionsToDTOs(circle.SuggestionQueue),
                 }).ToList();
                 return circleDTOs;
             }

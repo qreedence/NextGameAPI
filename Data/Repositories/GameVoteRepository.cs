@@ -26,7 +26,10 @@ namespace NextGameAPI.Data.Repositories
 
         public async Task<GameVote?> GetByIdAsync(int id)
         {
-            return await _applicationDbContext.GameVotes.FirstOrDefaultAsync(x => x.Id == id);
+            return await _applicationDbContext.GameVotes
+                .Include(v => v.User)
+                    .ThenInclude(u => u.Settings)
+                .FirstOrDefaultAsync(x => x.Id == id);
         }
 
         public async Task UpdateAsync(GameVote gameVote)

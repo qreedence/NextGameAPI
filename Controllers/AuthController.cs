@@ -264,6 +264,7 @@ namespace NextGameAPI.Controllers
                 var userSettings = await _userSettingsRepo.GetUserSettingsByUserIdAsync(user.Id);
                 var userProfileDTO = new UserProfileDTO
                 {
+                    UserId = user.Id,
                     Avatar = userSettings.Avatar,
                     UserName = user.UserName,
                     HasPassword = !string.IsNullOrEmpty(user.PasswordHash)
