@@ -83,11 +83,11 @@ namespace NextGameAPI.Controllers
         [Authorize]
         [EndpointName("SuggestGame")]
         [EndpointDescription("Suggest a game to a circle.")]
-        public async Task<IActionResult> SuggestGameAsync(Guid circleId, int gameId)
+        public async Task<IActionResult> SuggestGameAsync(Guid circleId, int gameId, string gameName, string gameCoverUrl)
         {
-            if (circleId != Guid.Empty && gameId > 0)
+            if (circleId != Guid.Empty && gameId > 0 && !string.IsNullOrEmpty(User?.Identity?.Name))
             {
-                await _circleService.SuggestGameToCircle(circleId, gameId);
+                await _circleService.SuggestGameToCircle(circleId, gameId, gameName, gameCoverUrl, User?.Identity?.Name);
                 return Ok();
             }
             return BadRequest();

@@ -60,7 +60,7 @@ namespace NextGameAPI.Services.Circles
             }
         }
 
-        public async Task SuggestGameToCircle(Guid circleId, int gameId)
+        public async Task SuggestGameToCircle(Guid circleId, int gameId, string gameName, string gameCoverUrl, string suggestedByUserName)
         {
             var circle = await _circleRepository.GetByIdAsync(circleId);
             if (circle == null)
@@ -77,6 +77,9 @@ namespace NextGameAPI.Services.Circles
             {
                 CircleId = circle.Id,
                 GameId = gameId,
+                GameName = gameName,
+                GameCoverUrl = gameCoverUrl,
+                SuggestedBy = suggestedByUserName,
             };
 
             await _gameSuggestionRepository.AddAsync(gameSuggestion);
