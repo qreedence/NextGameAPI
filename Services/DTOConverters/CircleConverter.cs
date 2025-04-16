@@ -20,6 +20,7 @@ namespace NextGameAPI.Services.DTOConverters
                     Name = circle.Name,
                     CreatedAt = circle.CreatedAt,
                     CreatedBy = _userConverter.ConvertUserToUserDTO(circle.CreatedBy) ?? new UserDTO { Username = "Unknown user" },
+                    SuggestionQueue = circle.SuggestionQueue,
                 };
                 return circleDTO;
             }

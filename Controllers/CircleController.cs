@@ -77,7 +77,39 @@ namespace NextGameAPI.Controllers
             }
 
             return Ok(_circleService.ConvertCirclesToCircleDTOs(circles));
-            
+        }
+
+        [HttpPost("suggest")]
+        [Authorize]
+        [EndpointName("SuggestGame")]
+        [EndpointDescription("Suggest a game to a circle.")]
+        public async Task<IActionResult> SuggestGameAsync(Guid circleId, int gameId)
+        {
+            if (circleId != Guid.Empty && gameId > 0)
+            {
+                await _circleService.SuggestGameToCircle(circleId, gameId);
+                return Ok();
+            }
+            return BadRequest();
+        }
+
+        [HttpGet("suggested")]
+        [Authorize]
+        [EndpointName("GetSuggestedGames")]
+        [EndpointDescription("Get all games in the suggestion queue for a circle.")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<GameSuggestion>))]
+        public async Task<IActionResult> GetSuggestedGamesAsync(Guid circleId)
+        {
+            if (circleId != Guid.Empty)
+            {
+                var gameSuggestions = await _circleService.GetGameSuggestionsForCircleAsync(circleId);
+                if (gameSuggestions.Count > 0)
+                {
+                    return Ok(gameSuggestions);
+                }
+                return NotFound();
+            }
+            return BadRequest();
         }
 
         [HttpPost("create")]
