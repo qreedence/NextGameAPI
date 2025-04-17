@@ -108,7 +108,7 @@ namespace NextGameAPI.Services.Circles
                 return;
             }
 
-            if (gameSuggestion.Votes.FirstOrDefault(v => v.User.Id == user?.Id) != null)
+            if (gameSuggestion.Votes.FirstOrDefault(v => v.User?.Id == user?.Id) != null)
             {
                 return;
             }
@@ -233,23 +233,23 @@ namespace NextGameAPI.Services.Circles
             return await _circleRepository.GetByIdAsync(circleId);
         }
 
-        public List<CircleDTO> ConvertCirclesToCircleDTOs(List<Circle> circles)
-        {
-            if (circles != null && circles.Count > 0)
-            {
-                var circleDTOs = circles.Select(circle => new CircleDTO
-                {
-                    Id = circle.Id,
-                    Name = circle.Name,
-                    CreatedAt = circle.CreatedAt,
-                    CreatedBy = _userConverter.ConvertUserToUserDTO(circle.CreatedBy),
-                    ActiveMembers = _userConverter.ConvertUsersToUserDTOs(circle.CircleMembers.Select(cm => cm.User).ToList()),
-                    SuggestionQueue = _gameSuggestionConverter.ConvertGameSuggestionsToDTOs(circle.SuggestionQueue),
-                }).ToList();
-                return circleDTOs;
-            }
-            return new List<CircleDTO>();
-        }
+        //public List<CircleDTO> ConvertCirclesToCircleDTOs(List<Circle> circles)
+        //{
+        //    if (circles != null && circles.Count > 0)
+        //    {
+        //        var circleDTOs = circles.Select(circle => new CircleDTO
+        //        {
+        //            Id = circle.Id,
+        //            Name = circle.Name,
+        //            CreatedAt = circle.CreatedAt,
+        //            CreatedBy = _userConverter.ConvertUserToUserDTO(circle.CreatedBy),
+        //            ActiveMembers = _userConverter.ConvertUsersToUserDTOs(circle.CircleMembers.Select(cm => cm.User).ToList()),
+        //            SuggestionQueue = _gameSuggestionConverter.ConvertGameSuggestionsToDTOs(circle.SuggestionQueue),
+        //        }).ToList();
+        //        return circleDTOs;
+        //    }
+        //    return new List<CircleDTO>();
+        //}
 
         public async Task<(bool, string)> LeaveCircleAsync(User user, Guid circleId)
         {

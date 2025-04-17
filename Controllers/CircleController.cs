@@ -7,6 +7,7 @@ using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
 using NextGameAPI.Services.Circles;
+using NextGameAPI.Services.DTOConverters;
 
 namespace NextGameAPI.Controllers
 {
@@ -17,12 +18,14 @@ namespace NextGameAPI.Controllers
         private readonly CircleService _circleService;
         private readonly UserManager<User> _userManager;
         private readonly IFriendship _friendshipRepository;
+        private readonly CircleConverter _circleConverter;
 
-        public CircleController(CircleService circleService, UserManager<User> userManager, IFriendship friendshipRepository)
+        public CircleController(CircleService circleService, UserManager<User> userManager, IFriendship friendshipRepository, CircleConverter circleConverter)
         {
             _circleService = circleService;
             _userManager = userManager;
             _friendshipRepository = friendshipRepository;
+            _circleConverter = circleConverter;
         }
 
         [HttpGet]
@@ -52,7 +55,7 @@ namespace NextGameAPI.Controllers
                 return Unauthorized();
             }
 
-            return Ok(_circleService.ConvertCirclesToCircleDTOs(new List<Circle>{circle}).FirstOrDefault());
+            return Ok(_circleConverter.ConvertCirclesToCircleDTOs(new List<Circle>{circle}).FirstOrDefault());
 
         }
 
@@ -77,7 +80,7 @@ namespace NextGameAPI.Controllers
                 return Ok(new List<CircleDTO>());
             }
 
-            return Ok(_circleService.ConvertCirclesToCircleDTOs(circles));
+            return Ok(_circleConverter.ConvertCirclesToCircleDTOs(circles));
         }
 
         [HttpPost("suggest")]
