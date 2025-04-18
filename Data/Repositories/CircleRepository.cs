@@ -75,6 +75,7 @@ namespace NextGameAPI.Data.Repositories
                     .Include(c => c.SuggestionQueue)
                         .ThenInclude(sq => sq.Votes)
                     .Include(c => c.CircleGames)
+                        .ThenInclude(cg => cg.Players)
                     .Include(c => c.CircleMembers.Where(cm => cm.IsActive))
                         .ThenInclude(cm => cm.User)
                     .ThenInclude(cm => cm.Settings)
