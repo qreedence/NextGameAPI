@@ -6,7 +6,9 @@ using NextGameAPI.Constants;
 using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
+using NextGameAPI.DTOs.Circles;
 using NextGameAPI.Services.Circles;
+using NextGameAPI.Services.DTOConverters;
 
 namespace NextGameAPI.Controllers
 {
@@ -17,12 +19,14 @@ namespace NextGameAPI.Controllers
         private readonly CircleService _circleService;
         private readonly UserManager<User> _userManager;
         private readonly IFriendship _friendshipRepository;
+        private readonly CircleConverter _circleConverter;
 
-        public CircleController(CircleService circleService, UserManager<User> userManager, IFriendship friendshipRepository)
+        public CircleController(CircleService circleService, UserManager<User> userManager, IFriendship friendshipRepository, CircleConverter circleConverter)
         {
             _circleService = circleService;
             _userManager = userManager;
             _friendshipRepository = friendshipRepository;
+            _circleConverter = circleConverter;
         }
 
         [HttpGet]
@@ -52,8 +56,7 @@ namespace NextGameAPI.Controllers
                 return Unauthorized();
             }
 
-            return Ok(_circleService.ConvertCirclesToCircleDTOs(new List<Circle>{circle}).FirstOrDefault());
-
+            return Ok(await _circleConverter.ConvertCircleToCircleDTO(circle));
         }
 
         [HttpGet("by-user")]
@@ -77,7 +80,7 @@ namespace NextGameAPI.Controllers
                 return Ok(new List<CircleDTO>());
             }
 
-            return Ok(_circleService.ConvertCirclesToCircleDTOs(circles));
+            return Ok(await _circleConverter.ConvertCirclesToCircleDTOs(circles));
         }
 
         [HttpPost("suggest")]
@@ -113,6 +116,34 @@ namespace NextGameAPI.Controllers
 
             await _circleService.VoteOnSuggestedGame(gameSuggestionId, gameVoteStatus, user);
             return Ok();
+        }
+
+        [HttpPost("add-game")]
+        [Authorize]
+        [EndpointName("AddGame")]
+        [EndpointDescription("Adds a game to a list in a circle.")]
+        public async Task<IActionResult> AddGameAsync(AddGameToCircleRequestDTO requestDTO)
+        {
+            if (requestDTO.CircleId != Guid.Empty)
+            {
+                await _circleService.AddGameToCircle(requestDTO);
+            }
+            return Ok();
+        }
+
+        [HttpGet("games")]
+        [Authorize]
+        [EndpointName("GetCircleGames")]
+        [EndpointDescription("Get all games for circle.")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<CircleGameDTO>))]
+        public async Task<IActionResult> GetGamesForCircleAsync(Guid circleId)
+        {
+            if (circleId == Guid.Empty)
+            {
+                return BadRequest();
+            }
+            var circleGames = await _circleService.GetCircleGamesForCircle(circleId);
+            return Ok(circleGames);
         }
 
         [HttpGet("suggested")]

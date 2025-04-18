@@ -12,8 +12,8 @@ using NextGameAPI.Data;
 namespace NextGameAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250415121944_Edit GameSuggestion model")]
-    partial class EditGameSuggestionmodel
+    [Migration("20250418092837_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,21 @@ namespace NextGameAPI.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("CircleGameCircleMember", b =>
+                {
+                    b.Property<int>("PlayedGamesId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("PlayersId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("PlayedGamesId", "PlayersId");
+
+                    b.HasIndex("PlayersId");
+
+                    b.ToTable("CircleGamePlayers", (string)null);
+                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -195,6 +210,59 @@ namespace NextGameAPI.Migrations
                     b.ToTable("Circles");
                 });
 
+            modelBuilder.Entity("NextGameAPI.Data.Models.CircleGame", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("CircleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("DateAdded")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateFinished")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateStarted")
+                        .HasColumnType("datetime2");
+
+                    b.PrimitiveCollection<string>("DatesPlayed")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GameCoverUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GameName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("GameStatus")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("SuggestedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CircleId");
+
+                    b.HasIndex("SuggestedById");
+
+                    b.ToTable("CircleGames");
+                });
+
             modelBuilder.Entity("NextGameAPI.Data.Models.CircleInvitation", b =>
                 {
                     b.Property<int>("Id")
@@ -351,8 +419,20 @@ namespace NextGameAPI.Migrations
                     b.Property<Guid>("CircleId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("GameCoverUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("GameId")
                         .HasColumnType("int");
+
+                    b.Property<string>("GameName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SuggestedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -376,12 +456,13 @@ namespace NextGameAPI.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("GameSuggestionId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("GameVotes");
                 });
@@ -587,6 +668,21 @@ namespace NextGameAPI.Migrations
                     b.ToTable("UserSettings");
                 });
 
+            modelBuilder.Entity("CircleGameCircleMember", b =>
+                {
+                    b.HasOne("NextGameAPI.Data.Models.CircleGame", null)
+                        .WithMany()
+                        .HasForeignKey("PlayedGamesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NextGameAPI.Data.Models.CircleMember", null)
+                        .WithMany()
+                        .HasForeignKey("PlayersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -645,6 +741,24 @@ namespace NextGameAPI.Migrations
                         .HasForeignKey("CreatedById");
 
                     b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("NextGameAPI.Data.Models.CircleGame", b =>
+                {
+                    b.HasOne("NextGameAPI.Data.Models.Circle", "Circle")
+                        .WithMany("CircleGames")
+                        .HasForeignKey("CircleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NextGameAPI.Data.Models.CircleMember", "SuggestedBy")
+                        .WithMany("SuggestedGames")
+                        .HasForeignKey("SuggestedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Circle");
+
+                    b.Navigation("SuggestedBy");
                 });
 
             modelBuilder.Entity("NextGameAPI.Data.Models.CircleInvitation", b =>
@@ -731,6 +845,12 @@ namespace NextGameAPI.Migrations
                     b.HasOne("NextGameAPI.Data.Models.GameSuggestion", null)
                         .WithMany("Votes")
                         .HasForeignKey("GameSuggestionId");
+
+                    b.HasOne("NextGameAPI.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("NextGameAPI.Data.Models.Notification", b =>
@@ -762,9 +882,16 @@ namespace NextGameAPI.Migrations
 
             modelBuilder.Entity("NextGameAPI.Data.Models.Circle", b =>
                 {
+                    b.Navigation("CircleGames");
+
                     b.Navigation("CircleMembers");
 
                     b.Navigation("SuggestionQueue");
+                });
+
+            modelBuilder.Entity("NextGameAPI.Data.Models.CircleMember", b =>
+                {
+                    b.Navigation("SuggestedGames");
                 });
 
             modelBuilder.Entity("NextGameAPI.Data.Models.GameSuggestion", b =>

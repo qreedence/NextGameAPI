@@ -11,5 +11,7 @@ namespace NextGameAPI.Data.Models
         public bool IsActive { get; set; }
         public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
         public DateTime? LeftAt { get; set; }
+        public List<CircleGame> PlayedGames { get; set; }
+        public List<CircleGame> SuggestedGames { get; set; }
     }
 }

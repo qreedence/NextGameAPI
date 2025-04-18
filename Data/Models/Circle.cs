@@ -8,5 +8,6 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public List<CircleMember> CircleMembers { get; set; } = [];
         public List<GameSuggestion> SuggestionQueue { get; set; } = [];
+        public List<CircleGame> CircleGames { get; set; } = [];
     }
 }

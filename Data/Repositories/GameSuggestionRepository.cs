@@ -64,5 +64,17 @@ namespace NextGameAPI.Data.Repositories
             _applicationDbContext.GameSuggestions.Update(gameSuggestion);
             await _applicationDbContext.SaveChangesAsync();
         }
+
+        public async Task DeleteAsync(int id)
+        {
+            var gameSuggestion = await _applicationDbContext.GameSuggestions.FirstOrDefaultAsync(gs => gs.Id == id);
+            if (gameSuggestion == null)
+            {
+                return;
+            }
+
+            _applicationDbContext.GameSuggestions.Remove(gameSuggestion);
+            await _applicationDbContext.SaveChangesAsync();
+        }
     }
 }

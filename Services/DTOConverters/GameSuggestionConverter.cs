@@ -1,6 +1,7 @@
 ﻿using NextGameAPI.Constants;
 using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
+using NextGameAPI.DTOs.Circles;
 
 namespace NextGameAPI.Services.DTOConverters
 {

@@ -1,6 +1,6 @@
 ﻿using NextGameAPI.Data.Models;
 
-namespace NextGameAPI.DTOs
+namespace NextGameAPI.DTOs.Circles
 {
     public class CircleInvitationDTO
     {

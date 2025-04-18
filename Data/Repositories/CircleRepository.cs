@@ -53,6 +53,7 @@ namespace NextGameAPI.Data.Repositories
                             .ThenInclude(cm => cm.Settings)
                     .Include(c => c.SuggestionQueue)
                         .ThenInclude(sq => sq.Votes)
+                    .Include(c => c.CircleGames)
                     .Where(c => c.CircleMembers
                         .Any(cm => cm.IsActive))
                     .FirstOrDefaultAsync(x => x.Id == id);
@@ -73,6 +74,7 @@ namespace NextGameAPI.Data.Repositories
                     .Include(c => c.CreatedBy)
                     .Include(c => c.SuggestionQueue)
                         .ThenInclude(sq => sq.Votes)
+                    .Include(c => c.CircleGames)
                     .Include(c => c.CircleMembers.Where(cm => cm.IsActive))
                         .ThenInclude(cm => cm.User)
                     .ThenInclude(cm => cm.Settings)
