@@ -8,5 +8,6 @@ namespace NextGameAPI.Data.Interfaces
         Task<GameSuggestion?> GetByIdAsync(int id);
         Task<GameSuggestion?> GetByGameIdAsync(Guid circleId, int gameId);
         Task UpdateAsync (GameSuggestion gameSuggestion);
+        Task DeleteAsync(int id);
     }
 }

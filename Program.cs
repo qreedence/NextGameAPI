@@ -51,6 +51,7 @@ namespace NextGameAPI
             builder.Services.AddTransient<ITwitchAccessToken, TwitchAccessTokenRepository>();
             builder.Services.AddTransient<IGameSuggestion, GameSuggestionRepository>();
             builder.Services.AddTransient<IGameVote, GameVoteRepository>();
+            builder.Services.AddTransient<ICircleGame, CircleGameRepository>();
 
             //HTTP Clients
             builder.Services.AddHttpClient("IGDBAuthClient", client =>
@@ -164,6 +165,7 @@ namespace NextGameAPI
             builder.Services.AddTransient<UserConverter>();
             builder.Services.AddTransient<CircleConverter>();
             builder.Services.AddTransient<GameSuggestionConverter>();
+            builder.Services.AddTransient<CircleGameConverter>();
 
             var app = builder.Build();
 

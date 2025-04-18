@@ -1,6 +1,6 @@
 ﻿using NextGameAPI.Data.Models;
 
-namespace NextGameAPI.DTOs
+namespace NextGameAPI.DTOs.Circles
 {
     public class CircleDTO
     {
@@ -10,5 +10,6 @@ namespace NextGameAPI.DTOs
         public required DateTime CreatedAt { get; set; }
         public List<CircleMemberDTO> ActiveMembers { get; set; } = [];
         public List<GameSuggestionDTO> SuggestionQueue { get; set; } = [];
+        public List<CircleGameDTO> CircleGames { get; set; } = [];
     }
 }

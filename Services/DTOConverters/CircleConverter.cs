@@ -1,5 +1,6 @@
 ﻿using NextGameAPI.Data.Models;
 using NextGameAPI.DTOs;
+using NextGameAPI.DTOs.Circles;
 
 namespace NextGameAPI.Services.DTOConverters
 {
@@ -7,12 +8,14 @@ namespace NextGameAPI.Services.DTOConverters
     {
         private readonly UserConverter _userConverter;
         private readonly GameSuggestionConverter _gameSuggestionConverter;
-        public CircleConverter (UserConverter userConverter, GameSuggestionConverter gameSuggestionConverter)
+        private readonly CircleGameConverter _circleGameConverter;
+        public CircleConverter (UserConverter userConverter, GameSuggestionConverter gameSuggestionConverter, CircleGameConverter circleGameConverter)
         {
             _userConverter = userConverter;
             _gameSuggestionConverter = gameSuggestionConverter;
+            _circleGameConverter = circleGameConverter;
         }
-        public CircleDTO? ConvertCircleToCircleDTO(Circle circle)
+        public async Task<CircleDTO?> ConvertCircleToCircleDTO(Circle circle)
         {
             if (circle != null && circle.CreatedBy != null)
             {
@@ -22,7 +25,8 @@ namespace NextGameAPI.Services.DTOConverters
                     Name = circle.Name,
                     CreatedAt = circle.CreatedAt,
                     CreatedBy = _userConverter.ConvertUserToUserDTO(circle.CreatedBy) ?? new UserDTO {UserId="Unknown user", Username = "Unknown user" },
-                    SuggestionQueue = _gameSuggestionConverter.ConvertGameSuggestionsToDTOs(circle.SuggestionQueue)
+                    SuggestionQueue = _gameSuggestionConverter.ConvertGameSuggestionsToDTOs(circle.SuggestionQueue),
+                    CircleGames = await _circleGameConverter.ConvertCircleGamesToCircleGameDTOs(circle.CircleGames)
                 };
 
                 circleDTO.ActiveMembers = circle.CircleMembers
@@ -32,7 +36,9 @@ namespace NextGameAPI.Services.DTOConverters
                         User = _userConverter.ConvertUserToUserDTO(cm.User)!,
                         Role = cm.Role,
                         JoinedAt = cm.JoinedAt,
-                        LeftAt = cm.LeftAt
+                        LeftAt = cm.LeftAt,
+                        CircleId = circle.Id
+                        
                     })
                     .ToList();
 
@@ -41,15 +47,15 @@ namespace NextGameAPI.Services.DTOConverters
             return null;
         }
 
-        public List<CircleDTO> ConvertCirclesToCircleDTOs(List<Circle> circles)
+        public async Task<List<CircleDTO>> ConvertCirclesToCircleDTOs(List<Circle> circles)
         {
             if (circles == null || circles.Count == 0)
                 return new List<CircleDTO>();
 
-            return circles
-              .Select(ConvertCircleToCircleDTO)    
-              .OfType<CircleDTO>()                 
-              .ToList();
+            var circleDtoTasks = circles.Select(ConvertCircleToCircleDTO).ToList();
+            var circleDTOs = await Task.WhenAll(circleDtoTasks);
+
+            return circleDTOs.Where(dto => dto != null).ToList()!;
         }
     }
 }

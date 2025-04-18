@@ -17,6 +17,7 @@ namespace NextGameAPI.Data
         public DbSet<CircleInvitation> CircleInvitations { get; set; }
         public DbSet<GameSuggestion> GameSuggestions { get; set; }
         public DbSet<GameVote> GameVotes { get; set; }
+        public DbSet<CircleGame> CircleGames { get; set; }
 
         //Users & Auth
         public DbSet<ExternalLoginToken> ExternalLoginTokens { get; set; }
@@ -62,6 +63,26 @@ namespace NextGameAPI.Data
                .WithOne(us => us.User)
                .HasForeignKey<UserSettings>(us => us.UserId)
                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Circle>()
+              .HasMany(c => c.CircleMembers)
+              .WithOne(cm => cm.Circle)
+              .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Circle>()
+                .HasMany(c => c.CircleGames)
+                .WithOne(cg => cg.Circle)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<CircleGame>()
+                .HasOne(cg => cg.SuggestedBy)
+                .WithMany(cm => cm.SuggestedGames)
+                .OnDelete(DeleteBehavior.SetNull); 
+
+            builder.Entity<CircleGame>()
+                .HasMany(cg => cg.Players)
+                .WithMany(cm => cm.PlayedGames)
+                .UsingEntity(j => j.ToTable("CircleGamePlayers"));
         }
     }
 }
