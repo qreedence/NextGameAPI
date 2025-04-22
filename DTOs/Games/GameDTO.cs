@@ -18,5 +18,8 @@ namespace NextGameAPI.DTOs.Games
         public List<string> Videos { get; set; } = [];
         public GameLinks Websites { get; set; } = new GameLinks();
         public List<string> SimilarGames { get; set; } = [];
+        public DateTime UpdatedAt { get; set; }
+        public List<CompanyDTO> InvolvedCompanies { get; set; } = [];
+        public List<string> GameModes { get; set; } = [];
     }
 }

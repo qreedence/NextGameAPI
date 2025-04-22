@@ -131,6 +131,16 @@ namespace NextGameAPI.Controllers
             return Ok();
         }
 
+        [HttpPut("change-game-status")]
+        [Authorize]
+        [EndpointName("ChangeGameStatus")]
+        [EndpointDescription("Edit game status of a circle game.")]
+        public async Task<IActionResult> ChangeGameStatusAsync(int circleGameId, GameStatus gameStatus)
+        {
+            await _circleService.ChangeGameStatusAsync(circleGameId, gameStatus);
+            return Ok();
+        }
+
         [HttpGet("games")]
         [Authorize]
         [EndpointName("GetCircleGames")]

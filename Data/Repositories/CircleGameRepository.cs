@@ -1,4 +1,5 @@
-﻿using NextGameAPI.Data.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using NextGameAPI.Data.Interfaces;
 using NextGameAPI.Data.Models;
 
 namespace NextGameAPI.Data.Repositories
@@ -22,6 +23,20 @@ namespace NextGameAPI.Data.Repositories
                     await _applicationDbContext.CircleGames.AddAsync(circleGame);
                     await _applicationDbContext.SaveChangesAsync();
                 }
+            }
+        }
+
+        public async Task<CircleGame?> GetByIdAsync(int id)
+        {
+            return await _applicationDbContext.CircleGames.FirstOrDefaultAsync(cg => cg.Id == id);
+        }
+
+        public async Task UpdateAsync(CircleGame circleGame)
+        {
+            if ( circleGame != null)
+            {
+                _applicationDbContext.CircleGames.Update(circleGame);
+                await _applicationDbContext.SaveChangesAsync();
             }
         }
     }

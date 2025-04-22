@@ -194,6 +194,16 @@ namespace NextGameAPI.Services.Circles
             await _circleRepository.UpdateCircleAsync(circle);
         }
 
+        public async Task ChangeGameStatusAsync(int circleGameId, GameStatus gameStatus)
+        {
+            var circleGame = await _circleGameRepository.GetByIdAsync(circleGameId);
+            if (circleGame != null)
+            {
+                circleGame.GameStatus = gameStatus;
+                await _circleGameRepository.UpdateAsync(circleGame);
+            }
+        }
+
         public async Task<List<CircleGameDTO>> GetCircleGamesForCircle(Guid circleId)
         {
             var circle = await _circleRepository.GetByIdAsync(circleId);

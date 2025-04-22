@@ -32,5 +32,11 @@ namespace NextGameAPI.DTOs.Games
         public List<int> Videos { get; set; } = [];
         [JsonPropertyName("websites")]
         public List<int> Websites { get; set; } = [];
+        [JsonPropertyName("updated_at")]
+        public long? UpdatedAt { get; set; }
+        [JsonPropertyName("involved_companies")]
+        public List<int> InvolvedCompanies { get; set; } = [];
+        [JsonPropertyName("game_modes")]
+        public List<int> GameModes { get; set; } = [];
     }
 }
