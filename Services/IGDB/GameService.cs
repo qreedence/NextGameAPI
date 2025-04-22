@@ -1,4 +1,5 @@
-﻿using NextGameAPI.DTOs.Games;
+﻿using NextGameAPI.Constants;
+using NextGameAPI.DTOs.Games;
 using System;
 using System.Text;
 using System.Text.Json;
@@ -95,13 +96,15 @@ namespace NextGameAPI.Services.IGDB
         public async Task<GameDTO?> GetGameAsync(string gameId)
         {
             string queryBody = $@"
-                fields aggregated_rating, cover, first_release_date, franchise, genres, multiplayer_modes, name, platforms, screenshots, similar_games, storyline, summary, videos, websites;
+                fields aggregated_rating, cover, first_release_date, franchise, genres, multiplayer_modes, name, platforms, screenshots, storyline, summary, videos, websites, game_modes, involved_companies, slug, tags, updated_at;
                 where id = {gameId};
             ";
             return await SendGetGameRequestAsync(queryBody);
         }
+
         #endregion
         #region Game Requests
+
         private async Task<GameDTO?> SendGetGameRequestAsync(string queryBody)
         {
             await EnsureAccessToken();
@@ -355,6 +358,88 @@ namespace NextGameAPI.Services.IGDB
             }
             return gameLinks;
         }
+
+        private async Task<List<CompanyDTO>> GetInvolvedCompaniesAsync(List<int> involvedCompanyIds)
+        {
+            string idList = string.Join(",", involvedCompanyIds);
+            if (involvedCompanyIds == null || involvedCompanyIds.Count == 0)
+            {
+                return new List<CompanyDTO>(); 
+            }
+
+            string involvedCompaniesQueryBody = $@"
+                fields company, developer, porting, publisher, supporting;
+                where id = ({idList});
+            ";
+            var involvedCompaniesResponseContent = await IntToStringRequests("involved_companies", involvedCompaniesQueryBody);
+            var involvedCompanies = JsonSerializer.Deserialize<List<InvolvedCompanyDTO>>(involvedCompaniesResponseContent);
+
+            if (involvedCompanies == null || involvedCompanies.Count == 0)
+            {
+                return new List<CompanyDTO>(); 
+            }
+
+            var companyIds = involvedCompanies
+                .Select(ic => ic.CompanyId) 
+                .Where(id => id > 0) 
+                .Distinct() 
+                .ToList();
+
+            var companyList = new List<CompanyDTO>();
+
+            if (companyIds.Count > 0)
+            {
+                string companiesQueryBody = $@"
+                    fields name;
+                    where id = ({string.Join(",", companyIds)});
+                ";
+                var companiesResponseContent = await IntToStringRequests("companies", companiesQueryBody);
+                var companies = JsonSerializer.Deserialize<List<CompanyResponse>>(companiesResponseContent);
+
+                if (companies != null)
+                {
+                    var companyNameMap = companies.ToDictionary(c => c.Id, c => c.Name);
+
+                    foreach (var involvedCompany in involvedCompanies)
+                    {
+                        string companyName = companyNameMap.TryGetValue(involvedCompany.CompanyId, out string name) ? name : "Unknown Company";
+
+                        var companyDTO = new CompanyDTO
+                        {
+                            Name = companyName,
+                            Developer = involvedCompany.Developer,
+                            Publisher = involvedCompany.Publisher,
+                            Supporting = involvedCompany.Supporting,
+                            Porting = involvedCompany.Porting,
+                        };
+                        companyList.Add(companyDTO);
+                    }
+                }
+            }
+
+            return companyList;
+        }
+        private async Task<List<string>> GetGameModesAsync(List<int> gameModeIds)
+        {
+            string idList = string.Join(",", gameModeIds);
+            string queryBody = $@"
+                fields name;
+                where id = ({idList});
+            ";
+            var responseContent = await IntToStringRequests("game_modes", queryBody);
+            var gameModes = JsonSerializer.Deserialize<List<GameModeResponse>>(responseContent);
+            if (gameModes == null || gameModes.Count <= 0)
+            {
+                return [];
+            }
+            var gameModeList = new List<string>();
+            foreach (var gameMode in gameModes)
+            {
+                gameModeList.Add(gameMode.Name);
+            }
+            return gameModeList;
+        }
+
         #endregion
         #region Private Helper Methods
         private async Task<GameDTO> ConvertGameResponseToGameDTO(GameResponse gameResponse)
@@ -375,13 +460,19 @@ namespace NextGameAPI.Services.IGDB
             {
                 game.FirstReleaseDate = DateTimeOffset.FromUnixTimeSeconds(gameResponse.FirstReleaseDate.Value).UtcDateTime.Date;
             }
+            if (gameResponse.UpdatedAt.HasValue)
+            {
+                game.UpdatedAt = DateTimeOffset.FromUnixTimeSeconds(gameResponse.UpdatedAt.Value).UtcDateTime.Date;
+            }
             game.Genres = await GetGenresAsync(gameResponse.Genres);
             game.MultiplayerModes = await GetMultiplayerModesAsync(gameResponse.MultiplayerModes);
             game.Platforms = await GetPlatformsAsync(gameResponse.Platforms);
             game.Screenshots = await GetScreenshotsAsync(gameResponse.Screenshots);
-            game.SimilarGames = await GetSimilarGamesAsync(gameResponse.SimilarGames);
+            //game.SimilarGames = await GetSimilarGamesAsync(gameResponse.SimilarGames);
             game.Videos = await GetVideosAsync(gameResponse.Videos);
             game.Websites = await GetWebsitesAsync(gameResponse.Websites);
+            game.InvolvedCompanies = await GetInvolvedCompaniesAsync(gameResponse.InvolvedCompanies);
+            game.GameModes = await GetGameModesAsync(gameResponse.GameModes);
             return game;
         }
         private async Task EnsureAccessToken()
