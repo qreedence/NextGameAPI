@@ -2,11 +2,11 @@
 
 namespace NextGameAPI.DTOs.Games
 {
-    public class CompanyResponse
+    public class KeywordResponse
     {
         [JsonPropertyName("id")]
         public int Id { get; set; }
-        [JsonPropertyName("name")]
+        [JsonPropertyName ("name")] 
         public string Name { get; set; }
     }
 }

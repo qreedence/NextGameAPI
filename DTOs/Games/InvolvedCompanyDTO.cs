@@ -7,7 +7,7 @@ namespace NextGameAPI.DTOs.Games
         [JsonPropertyName("id")]
         public int Id { get; set; }
         [JsonPropertyName("company")]
-        public int CompanyId { get; set; }
+        public CompanyDTO CompanyId { get; set; }
         [JsonPropertyName("developer")]
         public bool Developer { get; set; }
         [JsonPropertyName("porting")]

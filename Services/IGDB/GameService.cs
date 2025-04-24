@@ -22,7 +22,7 @@ namespace NextGameAPI.Services.IGDB
         {
             string queryBody = $@"
                 search ""{searchTerm}"";
-                fields id, name, cover, first_release_date;
+                fields id, name, cover.image_id, first_release_date;
                 limit 10;
             ";
             return await GetGameList("games", queryBody);
@@ -31,7 +31,7 @@ namespace NextGameAPI.Services.IGDB
         public async Task<List<GameSearchResultDTO>> GetNewGamesAsync()
         {
             string queryBody = $@"
-                fields id, name, cover, aggregated_rating, first_release_date;
+                fields id, name, cover.image_id, aggregated_rating, first_release_date;
                 where aggregated_rating > 60 & first_release_date < {(int)DateTimeOffset.UtcNow.ToUnixTimeSeconds()};
                 sort first_release_date desc;
                 limit 10;
@@ -46,7 +46,7 @@ namespace NextGameAPI.Services.IGDB
             int offset = (page - 1) * pageSize;
 
             string queryBody = $@"
-                fields id, name, cover, first_release_date;
+                fields id, name, cover.image_id, first_release_date;
                 where first_release_date < {(int)DateTimeOffset.UtcNow.ToUnixTimeSeconds()};
                 sort first_release_date desc;
                 limit {pageSize};
@@ -64,9 +64,9 @@ namespace NextGameAPI.Services.IGDB
             long endUnixTime = endOfYear.ToUnixTimeSeconds();
 
             string queryBody = $@"
-                fields id, name, cover, aggregated_rating, first_release_date, aggregated_rating_count;
+                fields id, name, cover.image_id, aggregated_rating, total_rating, first_release_date, aggregated_rating_count;
                 where first_release_date >= {startUnixTime} & first_release_date < {endUnixTime} & aggregated_rating_count > 1;
-                sort aggregated_rating desc;
+                sort total_rating desc;
                 limit 10;
             ";
             return await GetGameList("games", queryBody);
@@ -84,19 +84,39 @@ namespace NextGameAPI.Services.IGDB
             int offset = (page - 1) * pageSize;
 
             string queryBody = $@"
-                fields id, name, cover, aggregated_rating, first_release_date, aggregated_rating_count;
+                fields id, name, cover.image_id, aggregated_rating, total_rating, first_release_date, aggregated_rating_count;
                 where first_release_date >= {startUnixTime} & first_release_date < {endUnixTime} & aggregated_rating_count > 1;
-                sort aggregated_rating desc;
+                sort total_rating desc;
                 limit {pageSize};
                 offset {offset};
             ";
             return await GetGameList("games", queryBody);
         }
 
+        //New get game query
         public async Task<GameDTO?> GetGameAsync(string gameId)
         {
             string queryBody = $@"
-                fields aggregated_rating, cover, first_release_date, franchise, genres, multiplayer_modes, name, platforms, screenshots, storyline, summary, videos, websites, game_modes, involved_companies, slug, tags, updated_at;
+                fields 
+                    total_rating, aggregated_rating,     
+                    cover.image_id, 
+                    first_release_date, updated_at,
+                    genres.name, 
+                    multiplayer_modes, multiplayer_modes.campaigncoop, multiplayer_modes.dropin, multiplayer_modes.lancoop, multiplayer_modes.offlinecoop, multiplayer_modes.offlinecoopmax, multiplayer_modes.offlinemax, multiplayer_modes.onlinecoop, multiplayer_modes.onlinecoopmax, multiplayer_modes.onlinemax, multiplayer_modes.splitscreen, multiplayer_modes.splitscreenonline,
+                    name,
+                    themes.name,
+                    platforms.abbreviation, 
+                    screenshots.image_id, 
+                    storyline, 
+                    summary, 
+                    videos.video_id, 
+                    websites.type, websites.url,
+                    game_modes.name, 
+                    involved_companies, involved_companies.developer, involved_companies.publisher, involved_companies.supporting, involved_companies.porting, involved_companies.company.name,
+                    slug, 
+                    franchises.name, franchises.games.name, franchises.games.cover.image_id, franchises.games.first_release_date, franchises.games.parent_game, franchises.games.version_parent,
+                    keywords.name,
+                    parent_game.name, parent_game.cover.url;
                 where id = {gameId};
             ";
             return await SendGetGameRequestAsync(queryBody);
@@ -134,17 +154,11 @@ namespace NextGameAPI.Services.IGDB
             var gameList = JsonSerializer.Deserialize<List<GameSearchResultDTO>>(responseContent);
             if (gameList != null && gameList.Count > 0)
             {
-                var coverIds = gameList
-                    .Where(game => game.CoverID != null)
-                    .Select(game => game.CoverID.Value)
-                    .Distinct()
-                    .ToList();
-                var coverMap = await GetGameCoversInBatch(coverIds);
                 foreach (var game in gameList)
                 {
-                    if (game.CoverID != null && coverMap.ContainsKey(game.CoverID.Value))
+                    if (game.Cover != null && !string.IsNullOrEmpty(game.Cover.ImageId))
                     {
-                        game.CoverUrl = coverMap[game.CoverID.Value];
+                        game.CoverUrl = GetFormattedImageLink(game.Cover.ImageId, ImageType.Cover);
                     }
                     if (game.FirstReleaseDateUnix.HasValue)
                     {
@@ -156,189 +170,17 @@ namespace NextGameAPI.Services.IGDB
         }
         #endregion
         #region Game Attribute Requests
-        private async Task<string> GetCoverByIdAsync(int coverId)
+        
+        private GameLinks GetWebsites(List<WebsiteResponse> websiteLinks)
         {
-            string queryBody = $@"
-                fields id, url;
-                where id = ({coverId});
-            ";
 
-            var content = new StringContent(queryBody, Encoding.UTF8, "text/plain");
-            var response = await _httpClient.PostAsync("covers", content);
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var covers = JsonSerializer.Deserialize<List<GameCoverDTO>>(responseContent);
-            
-            if (covers == null || covers.Count <= 0)
-            {
-                return "";
-            }
-            return $"https://{covers.FirstOrDefault().Url!.Replace("thumb", "1080p").Substring(2)}";
-        }
-        private async Task<Dictionary<int, string>> GetGameCoversInBatch(List<int> ids)
-        {
-            if (ids == null || ids.Count == 0)
-            {
-                return new Dictionary<int, string>();
-            }
-
-            string idList = string.Join(",", ids);
-            string queryBody = $@"
-                fields id, url;
-                where id = ({idList});
-                limit {ids.Count};
-            ";
-
-            var content = new StringContent(queryBody, Encoding.UTF8, "text/plain");
-            var response = await _httpClient.PostAsync("covers", content);
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var covers = JsonSerializer.Deserialize<List<GameCoverDTO>>(responseContent);
-            if (covers == null)
-            {
-                return new Dictionary<int, string>();
-            }
-            return covers.ToDictionary(
-                cover => cover.Id,
-                cover => string.IsNullOrEmpty(cover.Url)
-                    ? ""
-                    : $"https://{cover.Url.Replace("thumb", "1080p").Substring(2)}"
-            );
-        }
-        private async Task<List<string>> GetGenresAsync(List<int> genreIds)
-        {
-            string idList = string.Join(",", genreIds);
-            string queryBody = $@"
-                fields name;
-                where id = ({idList});
-            ";
-            var responseContent = await IntToStringRequests("genres", queryBody);
-            var genres = JsonSerializer.Deserialize<List<GenreResponse>>(responseContent);
-            if (genres == null || genres.Count <= 0)
-            {
-                return [];
-            }
-            var genreList = new List<string>();
-            foreach (var genre in genres)
-            {
-                genreList.Add(genre.Name);
-            }
-            return genreList;
-        }
-        private async Task<MultiplayerModesDTO> GetMultiplayerModesAsync(List<int> multiplayerModeIds)
-        {
-            string idList = string.Join(",", multiplayerModeIds);
-            string queryBody = $@"
-                fields name;
-                where id = ({idList});
-            ";
-            var responseContent = await IntToStringRequests("multiplayer_modes", queryBody);
-            var multiplayerModesList = JsonSerializer.Deserialize<List<MultiplayerModesDTO>>(responseContent);
-            if (multiplayerModesList == null || multiplayerModesList.Count <= 0 || multiplayerModesList.FirstOrDefault() == null)
-            {
-                return new MultiplayerModesDTO();
-            }
-            return multiplayerModesList.FirstOrDefault()!;
-        }
-        private async Task<List<string>> GetPlatformsAsync(List<int> platformIds)
-        {
-            string idList = string.Join(",", platformIds);
-            string queryBody = $@"
-                fields name, abbreviation;
-                where id = ({idList});
-            ";
-            var responseContent = await IntToStringRequests("platforms", queryBody);
-            var platforms = JsonSerializer.Deserialize<List<PlatformResponse>>(responseContent);
-            if (platforms == null || platforms.Count <= 0)
-            {
-                return [];
-            }
-            var platformsList = new List<string>();
-            foreach (var platform in platforms)
-            {
-                platformsList.Add(platform.Abbreviation);
-            }
-            return platformsList;
-        }
-        private async Task<List<string>> GetSimilarGamesAsync(List<int> gameIds)
-        {
-            string idList = string.Join(",", gameIds);
-            string queryBody = $@"
-                fields name;
-                where id = ({idList});
-            ";
-            var responseContent = await IntToStringRequests("games", queryBody);
-            var games = JsonSerializer.Deserialize<List<GameSearchResultDTO>>(responseContent);
-            if (games == null || games.Count <= 0)
-            {
-                return [];
-            }
-            var gameList = new List<string>();
-            foreach (var game in games)
-            {
-                gameList.Add(game.Name);
-            }
-            return gameList;
-        }
-        private async Task<List<string>> GetVideosAsync(List<int> videoIds)
-        {
-            string idList = string.Join(",", videoIds);
-            string queryBody = $@"
-                fields video_id;
-                where id = ({idList});
-            ";
-            var responseContent = await IntToStringRequests("game_videos", queryBody);
-            var videos = JsonSerializer.Deserialize<List<VideoResponse>>(responseContent);
-            if (videos == null || videos.Count <= 0)
-            {
-                return [];
-            }
-            var videoList = new List<string>();
-            foreach (var video in videos)
-            {
-                string videoUrl = $"youtube.com/watch?v={video.VideoUrl}";
-                videoList.Add(videoUrl);
-            }
-            return videoList;
-        }
-        private async Task<List<string>> GetScreenshotsAsync(List<int> screenshotIds)
-        {
-            string idList = string.Join(",", screenshotIds);
-            string queryBody = $@"
-                fields url;
-                where id = ({idList});
-            ";
-            var responseContent = await IntToStringRequests("screenshots", queryBody);
-            var screenshots = JsonSerializer.Deserialize<List<ScreenshotResponse>>(responseContent);
-            if (screenshots == null || screenshots.Count <= 0)
-            {
-                return [];
-            }
-            var screenshotList = new List<string>();
-            foreach (var screenshot in screenshots)
-            {
-                if (screenshot.Url.Length > 2)
-                {
-                    string imageUrl = $"https://{screenshot.Url.Replace("thumb", "1080p").Substring(2)}";
-                    screenshotList.Add(imageUrl);
-                }
-            }
-            return screenshotList;
-        }
-        private async Task<GameLinks> GetWebsitesAsync(List<int> websiteLinks)
-        {
-            string idList = string.Join(",", websiteLinks);
-            string queryBody = $@"
-                fields id, type, trusted, url;
-                where id = ({idList});
-            ";
-            var responseContent = await IntToStringRequests("websites", queryBody);
-            var websites = JsonSerializer.Deserialize<List<WebsiteResponse>>(responseContent);
             var gameLinks = new GameLinks();
-            
-            if (websites == null || websites.Count <= 0)
+
+            if (websiteLinks == null || websiteLinks.Count <= 0)
             {
                 return gameLinks;
             }
-            foreach (var website in websites)
+            foreach (var website in websiteLinks)
             {
                 switch (website.WebsiteType)
                 {
@@ -359,87 +201,6 @@ namespace NextGameAPI.Services.IGDB
             return gameLinks;
         }
 
-        private async Task<List<CompanyDTO>> GetInvolvedCompaniesAsync(List<int> involvedCompanyIds)
-        {
-            string idList = string.Join(",", involvedCompanyIds);
-            if (involvedCompanyIds == null || involvedCompanyIds.Count == 0)
-            {
-                return new List<CompanyDTO>(); 
-            }
-
-            string involvedCompaniesQueryBody = $@"
-                fields company, developer, porting, publisher, supporting;
-                where id = ({idList});
-            ";
-            var involvedCompaniesResponseContent = await IntToStringRequests("involved_companies", involvedCompaniesQueryBody);
-            var involvedCompanies = JsonSerializer.Deserialize<List<InvolvedCompanyDTO>>(involvedCompaniesResponseContent);
-
-            if (involvedCompanies == null || involvedCompanies.Count == 0)
-            {
-                return new List<CompanyDTO>(); 
-            }
-
-            var companyIds = involvedCompanies
-                .Select(ic => ic.CompanyId) 
-                .Where(id => id > 0) 
-                .Distinct() 
-                .ToList();
-
-            var companyList = new List<CompanyDTO>();
-
-            if (companyIds.Count > 0)
-            {
-                string companiesQueryBody = $@"
-                    fields name;
-                    where id = ({string.Join(",", companyIds)});
-                ";
-                var companiesResponseContent = await IntToStringRequests("companies", companiesQueryBody);
-                var companies = JsonSerializer.Deserialize<List<CompanyResponse>>(companiesResponseContent);
-
-                if (companies != null)
-                {
-                    var companyNameMap = companies.ToDictionary(c => c.Id, c => c.Name);
-
-                    foreach (var involvedCompany in involvedCompanies)
-                    {
-                        string companyName = companyNameMap.TryGetValue(involvedCompany.CompanyId, out string name) ? name : "Unknown Company";
-
-                        var companyDTO = new CompanyDTO
-                        {
-                            Name = companyName,
-                            Developer = involvedCompany.Developer,
-                            Publisher = involvedCompany.Publisher,
-                            Supporting = involvedCompany.Supporting,
-                            Porting = involvedCompany.Porting,
-                        };
-                        companyList.Add(companyDTO);
-                    }
-                }
-            }
-
-            return companyList;
-        }
-        private async Task<List<string>> GetGameModesAsync(List<int> gameModeIds)
-        {
-            string idList = string.Join(",", gameModeIds);
-            string queryBody = $@"
-                fields name;
-                where id = ({idList});
-            ";
-            var responseContent = await IntToStringRequests("game_modes", queryBody);
-            var gameModes = JsonSerializer.Deserialize<List<GameModeResponse>>(responseContent);
-            if (gameModes == null || gameModes.Count <= 0)
-            {
-                return [];
-            }
-            var gameModeList = new List<string>();
-            foreach (var gameMode in gameModes)
-            {
-                gameModeList.Add(gameMode.Name);
-            }
-            return gameModeList;
-        }
-
         #endregion
         #region Private Helper Methods
         private async Task<GameDTO> ConvertGameResponseToGameDTO(GameResponse gameResponse)
@@ -450,29 +211,46 @@ namespace NextGameAPI.Services.IGDB
             }
 
             var game = new GameDTO();
+
             game.Id = gameResponse.Id;
             game.AggregatedRating = gameResponse.AggregatedRating;
-            game.Name = gameResponse.Name;
-            game.Storyline = gameResponse.Storyline;
-            game.Summary = gameResponse.Summary;
-            game.CoverUrl = await GetCoverByIdAsync(gameResponse.Cover);
+            game.TotalRating = gameResponse.TotalRating;
+            if (gameResponse.Cover != null && !string.IsNullOrEmpty(gameResponse.Cover.ImageId))
+            {
+                game.CoverUrl = GetFormattedImageLink(gameResponse.Cover.ImageId, ImageType.Cover);
+            }
             if (gameResponse.FirstReleaseDate.HasValue)
             {
                 game.FirstReleaseDate = DateTimeOffset.FromUnixTimeSeconds(gameResponse.FirstReleaseDate.Value).UtcDateTime.Date;
             }
-            if (gameResponse.UpdatedAt.HasValue)
+            foreach (var franchise in gameResponse.Franchises)
+            {
+                franchise.Games = franchise.Games
+                                           //.Where(franchiseGame => franchiseGame.ParentGame == null && franchiseGame.VersionParent == null)
+                                           .OrderByDescending(franchiseGame => franchiseGame.FirstReleaseDate)
+                                           .ToList();
+            }
+            game.Franchises = gameResponse.Franchises;
+            game.GameModes = gameResponse.GameModes.Select(x => x.Name).ToList();
+            game.Genres = gameResponse.Genres.Select(x => x.Name).ToList();
+            game.InvolvedCompanies = gameResponse.InvolvedCompanies;
+            game.Keywords = gameResponse.Keywords.Select(x => x.Name).ToList();
+            game.MultiplayerModes = gameResponse.MultiplayerModes != null ? gameResponse.MultiplayerModes.FirstOrDefault() : new MultiplayerModesDTO();
+            game.Name = gameResponse.Name;
+            game.ParentGame = gameResponse.ParentGame;
+            game.Platforms = gameResponse.Platforms.Select(x => x.Abbreviation).ToList();
+            game.Screenshots = GetFormattedImageLinks(gameResponse.Screenshots.Select(x => x.ImageId).ToList(), ImageType.Screenshot);
+            game.Slug = gameResponse.Slug;
+            game.Storyline = gameResponse.Storyline;
+            game.Summary = gameResponse.Summary;
+            game.Themes = gameResponse.Themes.Select(x => x.Name).ToList();
+            if (gameResponse.FirstReleaseDate.HasValue)
             {
                 game.UpdatedAt = DateTimeOffset.FromUnixTimeSeconds(gameResponse.UpdatedAt.Value).UtcDateTime.Date;
             }
-            game.Genres = await GetGenresAsync(gameResponse.Genres);
-            game.MultiplayerModes = await GetMultiplayerModesAsync(gameResponse.MultiplayerModes);
-            game.Platforms = await GetPlatformsAsync(gameResponse.Platforms);
-            game.Screenshots = await GetScreenshotsAsync(gameResponse.Screenshots);
-            //game.SimilarGames = await GetSimilarGamesAsync(gameResponse.SimilarGames);
-            game.Videos = await GetVideosAsync(gameResponse.Videos);
-            game.Websites = await GetWebsitesAsync(gameResponse.Websites);
-            game.InvolvedCompanies = await GetInvolvedCompaniesAsync(gameResponse.InvolvedCompanies);
-            game.GameModes = await GetGameModesAsync(gameResponse.GameModes);
+            game.Videos = gameResponse.Videos.Select(x => x.VideoId).ToList();
+            game.Websites = GetWebsites(gameResponse.Websites); 
+
             return game;
         }
         private async Task EnsureAccessToken()
@@ -482,6 +260,33 @@ namespace NextGameAPI.Services.IGDB
                 _accessToken = await _twitterAccessTokenService.GetAccessTokenAsync();
             }
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_accessToken}");
+        }
+
+        private string GetFormattedImageLink(string imageId, ImageType imageType)
+        {
+            string type = "";
+            switch (imageType)
+            {
+                case ImageType.Cover:
+                    type = "cover_big_2x";
+                    break;
+                default:
+                    type = "1080p_2x";
+                    break;
+            }
+
+            return $"https://images.igdb.com/igdb/image/upload/t_{type}/{imageId}.png";
+        }
+
+        private List<string> GetFormattedImageLinks(List<string> images, ImageType imageType)
+        {
+            var formattedLinks = new List<string>();
+            foreach (var image in images)
+            {
+                var formattedLink = GetFormattedImageLink(image, imageType);
+                formattedLinks.Add(formattedLink);
+            }
+            return formattedLinks;
         }
 
         private async Task<string> IntToStringRequests (string endpoint, string queryBody)
