@@ -7,6 +7,6 @@ namespace NextGameAPI.DTOs.Games
         [JsonPropertyName("id")]
         public int Id { get; set; }
         [JsonPropertyName("video_id")]
-        public string VideoUrl { get; set; } = "";
+        public string VideoId { get; set; } = "";
     }
 }

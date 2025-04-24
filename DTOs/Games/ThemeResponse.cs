@@ -2,11 +2,11 @@
 
 namespace NextGameAPI.DTOs.Games
 {
-    public class GameCoverDTO
+    public class ThemeResponse
     {
         [JsonPropertyName("id")]
         public int Id { get; set; }
-        [JsonPropertyName("image_id")]
-        public string? ImageId { get; set; }
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
     }
 }
